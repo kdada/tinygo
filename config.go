@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"path"
 	"strings"
-	"tinygo/info"
+	"github.com/kdada/tinygo/info"
 )
 
 // Tiny配置

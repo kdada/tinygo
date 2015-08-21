@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"tinygo/info"
-	"tinygo/router"
+	"github.com/kdada/tinygo/info"
+	"github.com/kdada/tinygo/router"
 )
 
 // 静态文件路由

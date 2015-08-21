@@ -3,9 +3,9 @@ package tinygo
 import (
 	"reflect"
 	"strings"
-	"tinygo/info"
-	"tinygo/router"
-	"tinygo/session"
+	"github.com/kdada/tinygo/info"
+	"github.com/kdada/tinygo/router"
+	"github.com/kdada/tinygo/session"
 )
 
 // 控制器方法路由信息

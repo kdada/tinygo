@@ -2,7 +2,7 @@ package router
 
 import (
 	"net/http"
-	"tinygo/session"
+	"github.com/kdada/tinygo/session"
 )
 
 //路由环境接口

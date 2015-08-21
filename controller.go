@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
-	"tinygo/info"
-	"tinygo/router"
+	"github.com/kdada/tinygo/info"
+	"github.com/kdada/tinygo/router"
 )
 
 //控制器接口

@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"tinygo/info"
-	"tinygo/router"
-	"tinygo/session"
+	"github.com/kdada/tinygo/info"
+	"github.com/kdada/tinygo/router"
+	"github.com/kdada/tinygo/session"
 )
 
 //根路由,其他路由应该作为根路由的子路由
