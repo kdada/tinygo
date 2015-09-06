@@ -205,8 +205,14 @@ func (this *Controller) HttpNotFound() {
 func (this *Controller) ParseParams(params ...interface{}) {
 	for _, param := range params {
 		var paramType = reflect.TypeOf(param)
-		if paramType.Kind() == reflect.Ptr && paramType.Elem().Kind() == reflect.Struct {
-			ParseUrlValueToStruct(this.Context.Request.Form, reflect.ValueOf(param))
+		var paramValue = reflect.ValueOf(param)
+		if paramType.Kind() == reflect.Ptr && paramType.Elem().Kind() == reflect.Struct && paramValue.Elem().CanSet() {
+			var err = this.Context.Request.ParseForm()
+			if err == nil {
+				ParseUrlValueToStruct(this.Context.Request.Form, paramValue.Elem())
+			} else {
+				fmt.Println(err)
+			}
 		}
 	}
 }

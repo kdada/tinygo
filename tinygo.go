@@ -246,7 +246,12 @@ func ParseUrlValueToStruct(urlValues url.Values, value reflect.Value) {
 				//非匿名字段
 				if fieldValue.CanSet() {
 					var fieldName = fieldType.Tag.Get("from")
+					if fieldName == "-" {
+						//如果是-,则忽略当前字段
+						continue
+					}
 					if fieldName == "" {
+						//如果为空,则使用字段名
 						fieldName = fieldType.Name
 					}
 					var urlValue = urlValues.Get(fieldName)
