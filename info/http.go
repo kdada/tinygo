@@ -4,19 +4,17 @@ package info
 type HttpMethod string
 
 const (
-	HttpMethodGet     HttpMethod = "GET"    //GET方法
-	HttpMethodPost    HttpMethod = "POST"   //POST方法
-	HttpMethodPut     HttpMethod = "PUT"    //PUT方法
-	HttpMethodHead    HttpMethod = "HEAD"   //HEAD方法
-	HttpMethodOptions HttpMethod = "OPTION" //OPTIONS方法
-	HttpMethodDelete  HttpMethod = "DELETE" //DELETE方法
+	HttpMethodGet    HttpMethod = "GET"    //GET方法
+	HttpMethodPost   HttpMethod = "POST"   //POST方法
+	HttpMethodPut    HttpMethod = "PUT"    //PUT方法
+	HttpMethodDelete HttpMethod = "DELETE" //DELETE方法
 )
 
 // 默认配置文件路径
-const DefaultConfigPath = "web.config"
+const DefaultConfigPath = "web.cfg"
 
 // 默认布局配置文件名
-const DefaultLayoutConfigFileName = "Layout.config"
+const DefaultLayoutConfigFileName = "layout.json"
 
 //默认模板文件扩展名
 const DefaultTemplateExt = ".html"
@@ -25,12 +23,16 @@ const DefaultTemplateExt = ".html"
 const DefaultTemplateName = "Content"
 
 //默认Cookie名
-const DefaultSessionCookieName = "SessionId"
+const DefaultSessionCookieName = "__SessionId"
+
+//默认CSRF名
+const DefaultCSRFCookieName = "__CSRFId"
 
 // Api格式
 type ApiType string
 
 const (
-	ApiTypeJson ApiType = "Json" //Json
-	ApiTypeXml  ApiType = "Xml"  //Xml
+	ApiTypeAuto ApiType = "auto" //根据请求自动判断
+	ApiTypeJson ApiType = "json" //Json
+	ApiTypeXml  ApiType = "xml"  //Xml
 )

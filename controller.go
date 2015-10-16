@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+
 	"github.com/kdada/tinygo/info"
 	"github.com/kdada/tinygo/router"
 )
@@ -125,14 +126,34 @@ func (this *Controller) Xml(value interface{}) {
 
 // Api 根据设置返回Json或Xml
 func (this *Controller) Api(value interface{}) {
-	switch info.ApiType(tinyConfig.Api) {
+	var api = info.ApiTypeJson
+	if info.ApiType(tinyConfig.api) == info.ApiTypeAuto {
+		//检测请求头中是否包含指定的api格式
+		//优先检测json格式,如果存在指定格式则返回指定格式
+		//如果均不存在则返回json格式
+		var accept = this.Context.Request.Header.Get("Accept")
+		var posJson = strings.Index(accept, "application/json")
+		if posJson > 0 {
+			api = info.ApiTypeJson
+		} else {
+			var posXml = strings.Index(accept, "application/xml")
+			if posXml > 0 {
+				api = info.ApiTypeXml
+			}
+		}
+	}
+	switch api {
+	case info.ApiTypeJson:
+		{
+			this.Json(value)
+		}
 	case info.ApiTypeXml:
 		{
 			this.Xml(value)
 		}
 	default:
 		{
-			this.Json(value)
+
 		}
 	}
 }

@@ -6,12 +6,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
 	"github.com/kdada/tinygo/info"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
@@ -29,24 +31,41 @@ var viewsMapper = map[string]*template.Template{}
 // Run 运行Http Server
 func Run() {
 	//加载配置
-	loadConfig()
-	loadLayoutConfig()
-	//生成静态路由
-	generateStaticRouters()
-	//编译全部视图
-	compileAllViews()
-	http.HandleFunc("/", handler)
-	var port = fmt.Sprintf(":%d", tinyConfig.Port)
-	fmt.Println("开始监听,端口:", tinyConfig.Port)
-	var err = http.ListenAndServe(port, nil)
+	var appFilePath, _ = exec.LookPath(os.Args[0])
+	var err = loadConfig(filepath.Dir(appFilePath))
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
+	err = loadLayoutConfig()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	//生成静态路由
+	generateStaticRouters()
+	//预编译视图
+	compileAllViews()
+	http.HandleFunc("/", handler)
+	var port = fmt.Sprintf(":%d", tinyConfig.port)
+	fmt.Println("开始监听,端口:", tinyConfig.port)
+	if tinyConfig.https {
+		//启动https监听
+		err = http.ListenAndServeTLS(port, tinyConfig.cert, tinyConfig.key, nil)
+	} else {
+		//启动http监听
+		err = http.ListenAndServe(port, nil)
+	}
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 }
 
 // 生成静态路由
 func generateStaticRouters() {
-	for _, path := range tinyConfig.StaticPath {
+	for _, path := range tinyConfig.static {
 		var components = strings.Split(path, `\/`)
 		var count = len(components)
 		var lastRouter = RootRouter
@@ -63,8 +82,8 @@ func generateStaticRouters() {
 
 // compileAllViews 根据tinyConfig.CompilePages设置编译全部视图
 func compileAllViews() {
-	if tinyConfig.CompilePages {
-		filepath.Walk(tinyConfig.ViewPath, func(filePath string, fileInfo os.FileInfo, err error) error {
+	if tinyConfig.precompile {
+		filepath.Walk(tinyConfig.view, func(filePath string, fileInfo os.FileInfo, err error) error {
 			if fileInfo != nil && !fileInfo.IsDir() && path.Ext(fileInfo.Name()) == info.DefaultTemplateExt {
 				filePath = generateViewFilePath(filePath)
 				if !isLayoutFile(filePath) {
@@ -121,8 +140,8 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 
 // HttpNotFound 页面不存在
 func HttpNotFound(w http.ResponseWriter, r *http.Request) {
-	if tinyConfig.PageError != "" {
-		http.ServeFile(w, r, tinyConfig.PageError)
+	if tinyConfig.pageerr != "" {
+		http.ServeFile(w, r, tinyConfig.pageerr)
 		w.WriteHeader(404)
 	} else {
 		http.NotFound(w, r)
