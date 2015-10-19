@@ -18,7 +18,7 @@ type IController interface {
 	// SetContext 设置请求上下文环境
 	SetContext(context *router.HttpContext)
 	// SetRouter 设置使用当前控制器的路由
-	SetRouter(router router.IRouter)
+	SetRouter(router router.Router)
 	// File 返回文件
 	File(path string)
 	// Json 返回json格式的数据
@@ -71,7 +71,7 @@ type ParamData map[string]string
 // 控制器
 type Controller struct {
 	Context *router.HttpContext //环境
-	Router  router.IRouter      //选择了当前控制器的最后一级路由
+	Router  router.Router       //选择了当前控制器的最后一级路由
 	Data    ViewData            //用于传递给页面的数据
 }
 
@@ -82,7 +82,7 @@ func (this *Controller) SetContext(context *router.HttpContext) {
 }
 
 // SetRouter 设置使用当前控制器的路由
-func (this *Controller) SetRouter(router router.IRouter) {
+func (this *Controller) SetRouter(router router.Router) {
 	this.Router = router
 }
 

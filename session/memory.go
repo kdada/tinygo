@@ -107,14 +107,14 @@ type MemSessionProvider struct {
 }
 
 // NewMemSessionProvider 创建Session提供器
-func NewMemSessionProvider() ISessionProvider {
+func NewMemSessionProvider() SessionProvider {
 	var provider = new(MemSessionProvider)
 	provider.sessions = make(map[string]*MemSession, 100)
 	return provider
 }
 
 // CreateSession 创建Session
-func (this *MemSessionProvider) CreateSession() (ISession, bool) {
+func (this *MemSessionProvider) CreateSession() (Session, bool) {
 	var sessionId = fmt.Sprintf("%d%d",time.Now().UnixNano(),this.sessionCounter)
 	var ss = newMemSession(sessionId)
 	ss.SetDeadline(3600)//默认一小时
@@ -124,7 +124,7 @@ func (this *MemSessionProvider) CreateSession() (ISession, bool) {
 }
 
 // Session 获取Session
-func (this *MemSessionProvider) Session(sessionId string) (ISession, bool) {
+func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
 	var ss,ok = this.sessions[sessionId]
 	if ok && ss.Dead() {
 		return nil,false

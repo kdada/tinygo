@@ -21,7 +21,7 @@ func (this *RootRouter) Check(routes []string) bool {
 }
 
 // SetSuper 设置父路由
-func (this *RootRouter) SetSuper(super IRouter) {
+func (this *RootRouter) SetSuper(super Router) {
 	//根路由无法设置
 }
 

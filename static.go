@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
 	"github.com/kdada/tinygo/info"
 	"github.com/kdada/tinygo/router"
 )
@@ -22,7 +23,7 @@ type StaticRouter struct {
 // name "static"
 // path "content/static/"
 // 即url static/css/index.css 映射为本地目录 content/static/css/index.css
-func NewStaticRouter(name, path string) router.IRouter {
+func NewStaticRouter(name, path string) router.Router {
 	var router = new(StaticRouter)
 	router.Init(name)
 	router.path = strings.TrimRight(path, "/")
@@ -33,7 +34,7 @@ func NewStaticRouter(name, path string) router.IRouter {
 // context: 上下文环境
 // return: 返回路由是否处理了该请求
 // 如果请求已经被处理了,则该请求不应该继续被传递
-func (this *StaticRouter) Pass(context router.IRouterContext) bool {
+func (this *StaticRouter) Pass(context router.RouterContext) bool {
 	var httpContext, ok = context.(*router.HttpContext)
 	//只响应GET请求
 	if ok && httpContext.Request.Method == string(info.HttpMethodGet) {

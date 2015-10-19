@@ -1,7 +1,7 @@
 package session
 
 // Session
-type ISession interface {
+type Session interface {
 	// SessionId 返回Session的Id
 	SessionId() string
 	// Value 获取值
@@ -33,11 +33,11 @@ type ISession interface {
 }
 
 // Session提供器
-type ISessionProvider interface {
+type SessionProvider interface {
 	// CreateSession 创建Session
-	CreateSession() (ISession, bool)
+	CreateSession() (Session, bool)
 	// Session 获取Session
-	Session(sessionId string) (ISession, bool)
+	Session(sessionId string) (Session, bool)
 	// Clean 清理过期Session
 	Clean()
 }

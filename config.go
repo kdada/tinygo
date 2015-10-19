@@ -18,19 +18,21 @@ func NormalizePath(path string) string {
 	return strings.TrimLeft(filepath.ToSlash(path), "/")
 }
 
-// 基本配置(ini格式)
+// 基本配置
 var tinyConfig = struct {
-	path       string   //当前程序启动目录
-	https      bool     //是否启用https,可选,默认为false
-	port       uint16   //监听端口,可选,默认为80，https为true则默认为443
-	cert       string   //证书(PEM)路径,如果启用了https则必填
-	key        string   //私钥(PEM)路径,如果启用了https则必填
-	session    string   //session类型,参考tinygo/session,默认为memory
-	static     []string //静态文件目录,默认为"content"
-	view       string   //视图文件目录,默认为"views"
-	pageerr    string   //默认错误页面路径,默认为空
-	precompile bool     //是否预编译页面路径,默认为false
-	api        string   //使用Api返回的数据的解析格式,默认为auto
+	path          string   //当前程序启动目录(无需从文件读取)
+	https         bool     //是否启用https,可选,默认为false
+	port          uint16   //监听端口,可选,默认为80，https为true则默认为443
+	cert          string   //证书(PEM)路径,如果启用了https则必填
+	pkey          string   //私钥(PEM)路径,如果启用了https则必填
+	session       bool     //是否启用session
+	sessiontype   string   //session类型,参考tinygo/session,默认为memory
+	sessionexpire int64    //session过期时间,单位为秒
+	static        []string //静态文件目录,默认为"content"
+	view          string   //视图文件目录,默认为"views"
+	pageerr       string   //默认错误页面路径,默认为空
+	precompile    bool     //是否预编译页面路径,默认为false
+	api           string   //使用Api返回的数据的解析格式,默认为auto
 }{}
 
 // loadConfig 加载配置
@@ -65,12 +67,22 @@ func loadConfig(envPath string) error {
 			//cert
 			tinyConfig.cert, _ = global.String("cert")
 			//key
-			tinyConfig.key, _ = global.String("key")
+			tinyConfig.pkey, _ = global.String("pkey")
 		}
 		//session
-		tinyConfig.session, err = global.String("session")
+		tinyConfig.session, err = global.Bool("session")
 		if err != nil {
-			tinyConfig.session = "memory"
+			tinyConfig.session = false
+		}
+		//sessiontype
+		tinyConfig.sessiontype, err = global.String("sessiontype")
+		if err != nil {
+			tinyConfig.sessiontype = "memory"
+		}
+		//sessionexpire
+		tinyConfig.sessionexpire, err = global.Int("sessionexpire")
+		if err != nil {
+			tinyConfig.sessionexpire = 3600
 		}
 		//static
 		paths, err := global.String("static")

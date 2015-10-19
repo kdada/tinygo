@@ -3,6 +3,7 @@ package tinygo
 import (
 	"reflect"
 	"strings"
+
 	"github.com/kdada/tinygo/info"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
@@ -27,7 +28,7 @@ type MethodRouter struct {
 
 // NewControllerRouter 创建控制器方法路由
 // instance:结构体实例,必须是结构体指针,并且在Routers方法中返回方法路由信息
-func NewControllerRouter(instance IController) router.IRouter {
+func NewControllerRouter(instance IController) router.Router {
 	var ptrType = reflect.TypeOf(instance)
 	if ptrType.Kind() == reflect.Ptr && ptrType.Elem().Kind() == reflect.Struct {
 		var instanceType = ptrType.Elem()
@@ -58,7 +59,7 @@ func NewControllerRouter(instance IController) router.IRouter {
 // context: 上下文环境
 // return: 返回路由是否处理了该请求
 // 如果请求已经被处理了,则该请求不应该继续被传递
-func (this *MethodRouter) Pass(context router.IRouterContext) bool {
+func (this *MethodRouter) Pass(context router.RouterContext) bool {
 	var httpContext, ok = context.(*router.HttpContext)
 	if ok {
 		if string(this.httpMethod) == httpContext.Request.Method {
@@ -71,7 +72,7 @@ func (this *MethodRouter) Pass(context router.IRouterContext) bool {
 			}
 			//添加Session信息
 			var cookie, err = httpContext.Request.Cookie(info.DefaultSessionCookieName)
-			var ss session.ISession
+			var ss session.Session
 			var ok bool = false
 			if err == nil {
 				ss, ok = SessionProvider.Session(cookie.Value)

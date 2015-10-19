@@ -51,7 +51,7 @@ func Run() {
 	fmt.Println("开始监听,端口:", tinyConfig.port)
 	if tinyConfig.https {
 		//启动https监听
-		err = http.ListenAndServeTLS(port, tinyConfig.cert, tinyConfig.key, nil)
+		err = http.ListenAndServeTLS(port, tinyConfig.cert, tinyConfig.pkey, nil)
 	} else {
 		//启动http监听
 		err = http.ListenAndServe(port, nil)
