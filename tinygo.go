@@ -76,7 +76,7 @@ func generateStaticRouters() {
 				lastRouter = space
 			}
 		}
-		lastRouter.AddChild(NewStaticRouter(components[count-1], path))
+		lastRouter.AddChild(router.NewStaticRouter(components[count-1], path))
 	}
 }
 
@@ -127,7 +127,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 // dispatch 路由查询处理
 func dispatch(w http.ResponseWriter, r *http.Request) {
-	var context = router.HttpContext{}
+	var context = HttpContext{}
 	context.UrlParts = strings.Split(r.URL.Path, "/")[1:]
 	context.Request = r
 	context.ResponseWriter = w
