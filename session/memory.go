@@ -104,39 +104,42 @@ func (this *MemSession) Dead() bool {
 type MemSessionProvider struct {
 	sessionCounter int                    //session计数器
 	sessions       map[string]*MemSession //存储Session
+	defaultExpire  int64                  //默认过期时间
 }
 
 // NewMemSessionProvider 创建Session提供器
-func NewMemSessionProvider() SessionProvider {
+func NewMemSessionProvider(expire int64) SessionProvider {
 	var provider = new(MemSessionProvider)
 	provider.sessions = make(map[string]*MemSession, 100)
+	provider.defaultExpire = expire
 	return provider
 }
 
 // CreateSession 创建Session
 func (this *MemSessionProvider) CreateSession() (Session, bool) {
-	var sessionId = fmt.Sprintf("%d%d",time.Now().UnixNano(),this.sessionCounter)
+	var sessionId = fmt.Sprintf("%d%d", time.Now().UnixNano(), this.sessionCounter)
 	var ss = newMemSession(sessionId)
-	ss.SetDeadline(3600)//默认一小时
+	ss.SetDeadline(this.defaultExpire)
 	this.sessionCounter++
 	this.sessions[sessionId] = ss
-	return ss,true
+	return ss, true
 }
 
 // Session 获取Session
 func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
-	var ss,ok = this.sessions[sessionId]
+	var ss, ok = this.sessions[sessionId]
 	if ok && ss.Dead() {
-		return nil,false
+		delete(this.sessions, sessionId)
+		return nil, false
 	}
 	return ss, ok
 }
 
 // Clean 清理过期Session
 func (this *MemSessionProvider) Clean() {
-	for k,v := range this.sessions {
+	for k, v := range this.sessions {
 		if v.Dead() {
-			delete(this.sessions,k)
+			delete(this.sessions, k)
 		}
 	}
 }

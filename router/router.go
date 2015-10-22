@@ -30,12 +30,16 @@ type Router interface {
 	RemoveChild(name string) bool
 	// AddBeforeFilter 添加前置过滤器
 	AddBeforeFilter(filter RouterFilter) bool
-	// RemoveBeforeFilter 移除后置过滤器
+	// RemoveBeforeFilter 移除前置过滤器
 	RemoveBeforeFilter(filter RouterFilter) bool
+	// ExecBeforeFilter 执行前置过滤器
+	ExecBeforeFilter(context RouterContext) bool
 	// AddAfterFilter 添加后置过滤器
 	AddAfterFilter(fileter RouterFilter) bool
 	// RemoveAfterFilter 移除后置过滤器
 	RemoveAfterFilter(filter RouterFilter) bool
+	// ExecAfterFilter 执行后置过滤器
+	ExecAfterFilter(context RouterContext) bool
 }
 
 // 默认页面路由器接口
@@ -63,7 +67,7 @@ type ContextExecutor interface {
 type RouterContext interface {
 	// Method 返回请求的HTTP方法
 	Method() string
-	// ResponseWriter 返回ResponseWriter
+	// responseWriter 返回responseWriter
 	ResponseWriter() http.ResponseWriter
 	// Request 返回Request
 	Request() *http.Request

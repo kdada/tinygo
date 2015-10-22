@@ -39,7 +39,7 @@ func (this *Controller) SetRouter(router router.Router) {
 
 // File 返回文件
 func (this *Controller) File(path string) {
-	http.ServeFile(this.Context.ResponseWriter, this.Context.Request, path)
+	http.ServeFile(this.Context.responseWriter, this.Context.request, path)
 }
 
 // Json 返回json格式的数据
@@ -49,11 +49,11 @@ func (this *Controller) Json(value interface{}) {
 		fmt.Println(err)
 		this.HttpNotFound()
 	} else {
-		this.Context.ResponseWriter.Header().Set("Content-Type", "application/json")
-		_, err := this.Context.ResponseWriter.Write(bytes)
+		this.Context.responseWriter.Header().Set("Content-Type", "application/json")
+		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
 			fmt.Println(err)
-			this.Context.ResponseWriter.WriteHeader(404)
+			this.Context.responseWriter.WriteHeader(404)
 		}
 	}
 }
@@ -66,11 +66,11 @@ func (this *Controller) Xml(value interface{}) {
 		fmt.Println(err)
 		this.HttpNotFound()
 	} else {
-		this.Context.ResponseWriter.Header().Set("Content-Type", "application/xml")
-		_, err := this.Context.ResponseWriter.Write(bytes)
+		this.Context.responseWriter.Header().Set("Content-Type", "application/xml")
+		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
 			fmt.Println(err)
-			this.Context.ResponseWriter.WriteHeader(404)
+			this.Context.responseWriter.WriteHeader(404)
 		}
 	}
 }
@@ -82,7 +82,7 @@ func (this *Controller) Api(value interface{}) {
 		//检测请求头中是否包含指定的api格式
 		//优先检测json格式,如果存在指定格式则返回指定格式
 		//如果均不存在则返回json格式
-		var accept = this.Context.Request.Header.Get("Accept")
+		var accept = this.Context.request.Header.Get("Accept")
 		var posJson = strings.Index(accept, "application/json")
 		if posJson > 0 {
 			api = info.ApiTypeJson
@@ -147,7 +147,7 @@ func (this *Controller) DefaultViewPath() string {
 // data:需要传递给网页的结构体(必须是指针)或map(必须是ViewData类型),能传递的字段必须是公开字段
 func (this *Controller) View(path string, data ...interface{}) {
 	this.SetData(data...)
-	ParseTemplate(this.Context.ResponseWriter, this.Context.Request, path, this.Data)
+	ParseTemplate(this.Context.responseWriter, this.Context.request, path, this.Data)
 }
 
 // SimpleView 返回 控制器名(不含Controller)/方法名.html 页面
@@ -158,7 +158,7 @@ func (this *Controller) SimpleView(data ...interface{}) {
 // PartialView 返回 控制器名(不含Controller)/方法名.html 页面无视layout设置
 func (this *Controller) PartialView(path string, data ...interface{}) {
 	this.SetData(data...)
-	ParsePartialTemplate(this.Context.ResponseWriter, this.Context.Request, path, this.Data)
+	ParsePartialTemplate(this.Context.responseWriter, this.Context.request, path, this.Data)
 
 }
 
@@ -169,7 +169,7 @@ func (this *Controller) SimplePartialView(data ...interface{}) {
 
 // HttpNotFound 返回404
 func (this *Controller) HttpNotFound() {
-	HttpNotFound(this.Context.ResponseWriter, this.Context.Request)
+	HttpNotFound(this.Context.responseWriter, this.Context.request)
 }
 
 // ParseParams 将参数解析到结构体中
@@ -179,9 +179,9 @@ func (this *Controller) ParseParams(params ...interface{}) {
 		var paramType = reflect.TypeOf(param)
 		var paramValue = reflect.ValueOf(param)
 		if paramType.Kind() == reflect.Ptr && paramType.Elem().Kind() == reflect.Struct && paramValue.Elem().CanSet() {
-			var err = this.Context.Request.ParseForm()
+			var err = this.Context.request.ParseForm()
 			if err == nil {
-				ParseUrlValueToStruct(this.Context.Request.Form, paramValue.Elem())
+				ParseUrlValueToStruct(this.Context.request.Form, paramValue.Elem())
 			} else {
 				fmt.Println(err)
 			}
@@ -241,7 +241,7 @@ func (this *Controller) Redirect(controller string, method string, params ...int
 
 // Redirect [302] 重定向到指定url
 func (this *Controller) RedirectUrl(url string) {
-	Redirect(this.Context.ResponseWriter, this.Context.Request, url)
+	Redirect(this.Context.responseWriter, this.Context.request, url)
 }
 
 // RedirectPermanently [301] 永久重定向到指定控制器的方法
@@ -264,10 +264,10 @@ func (this *Controller) RedirectPermanently(controller string, method string, pa
 
 // RedirectUrlPermanently [301] 永久重定向到指定url
 func (this *Controller) RedirectUrlPermanently(url string) {
-	RedirectPermanently(this.Context.ResponseWriter, this.Context.Request, url)
+	RedirectPermanently(this.Context.responseWriter, this.Context.request, url)
 }
 
 // Routers 返回当前控制器可以使用的方法路由信息
-func (this *Controller) Routers() []RouterInfo {
-	return []RouterInfo{}
+func (this *Controller) Routers() []interface{} {
+	return nil
 }

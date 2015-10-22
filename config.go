@@ -21,6 +21,7 @@ func NormalizePath(path string) string {
 // 基本配置
 var tinyConfig = struct {
 	path          string   //当前程序启动目录(无需从文件读取)
+	mode          string   //启动模式,可以为debug或release
 	https         bool     //是否启用https,可选,默认为false
 	port          uint16   //监听端口,可选,默认为80，https为true则默认为443
 	cert          string   //证书(PEM)路径,如果启用了https则必填
@@ -48,6 +49,11 @@ func loadConfig(envPath string) error {
 		//读取配置文件
 		var global = cfg.GlobalSection()
 		var err error
+		//mode
+		tinyConfig.mode, err = global.String("mode")
+		if err != nil {
+			tinyConfig.mode = "debug"
+		}
 		//https
 		tinyConfig.https, err = global.Bool("https")
 		if err != nil {
@@ -116,6 +122,11 @@ func loadConfig(envPath string) error {
 		}
 		return nil
 	}
+}
+
+// 判断当前是否是发布模式
+func IsRelease() bool {
+	return tinyConfig.mode == "release"
 }
 
 // getViewFilePath 返回视图文件路径的绝对路径

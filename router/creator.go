@@ -47,18 +47,46 @@ func NewControllerRouter(instance Controller) Router {
 		spaceName = strings.TrimSuffix(spaceName, "Controller")
 		var controllerRouter = NewSpaceRouter(spaceName)
 		for _, routerInfo := range routersInfo {
-			var methodRouter = new(MethodRouter)
-			methodRouter.Init(routerInfo.MethodName)
-			methodRouter.httpMethod = routerInfo.HttpMethod
-			methodRouter.extensions = routerInfo.Extensions
-			methodRouter.instanceType = instanceType
-			var ok = false
-			methodRouter.methodType, ok = ptrType.MethodByName(routerInfo.MethodName)
+			var info, ok = routerInfo.(ControllerRouter)
 			if ok {
-				controllerRouter.AddChild(methodRouter)
+				var name, method, extensions = info.Info()
+				var methodRouter = new(MethodRouter)
+				methodRouter.Init(name)
+				methodRouter.httpMethod = method
+				methodRouter.extensions = extensions
+				methodRouter.instanceType = instanceType
+				var ok = false
+				methodRouter.methodType, ok = ptrType.MethodByName(name)
+				if ok {
+					controllerRouter.AddChild(methodRouter)
+				}
 			}
 		}
 		return controllerRouter
 	}
 	return nil
+}
+
+// NewRestfulControllerRouter 创建Restful控制器路由
+// instance:结构体实例,必须是结构体指针
+func NewRestfulControllerRouter(instance RestfulController) Router {
+	var ptrType = reflect.TypeOf(instance)
+	if ptrType.Kind() == reflect.Ptr && ptrType.Elem().Kind() == reflect.Struct {
+		var instanceType = ptrType.Elem()
+		//控制器名
+		var spaceName = instanceType.Name()
+		spaceName = strings.TrimSuffix(spaceName, "Controller")
+		var controllerRouter = new(RestfulRouter)
+		controllerRouter.instanceType = instanceType
+		return controllerRouter
+	}
+	return nil
+}
+
+// NewFunctionRouter 创建函数路由
+func NewFunctionRouter(name string, f func(RouterContext)) Router {
+	var router = new(FunctionRouter)
+	router.Init(name)
+	router.function = f
+	return router
 }

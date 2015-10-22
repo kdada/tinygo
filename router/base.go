@@ -73,6 +73,16 @@ func (this *BaseRouter) Pass(context RouterContext) bool {
 	return false
 }
 
+// check 检查当前路由能否处理route
+func (this *BaseRouter) check(route string) (map[string]string, bool) {
+	if this.reg {
+		var m, err = this.segment.Parse(route)
+		return m, err == nil
+	} else {
+		return nil, route == this.name
+	}
+}
+
 // Child 通过名称获取子路由
 func (this *BaseRouter) Child(name string) (Router, bool) {
 	name = strings.ToLower(name)

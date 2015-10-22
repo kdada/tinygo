@@ -71,13 +71,3 @@ func (this *SpaceRouter) Pass(context RouterContext) bool {
 	}
 	return false
 }
-
-// check 检查当前路由能否处理route
-func (this *SpaceRouter) check(route string) (map[string]string, bool) {
-	if this.reg {
-		var m, err = this.segment.Parse(route)
-		return m, err == nil
-	} else {
-		return nil, route == this.name
-	}
-}

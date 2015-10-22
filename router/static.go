@@ -10,7 +10,7 @@ import (
 // 静态文件路由
 // 静态文件方法路由仅用于隔离路由空间,本身并不具备任何功能
 type StaticRouter struct {
-	SpaceRouter
+	BaseRouter
 	path string //当前静态路由对应的本地文件目录
 }
 
@@ -33,6 +33,7 @@ func (this *StaticRouter) Pass(context RouterContext) bool {
 		var info, err = os.Stat(currentPath)
 		if err == nil && !info.IsDir() {
 			var sre = &StaticRouterExecutor{currentPath}
+			context.AddRouter(this)
 			context.AddContextExecutor(sre)
 			return true
 		}
