@@ -3,11 +3,10 @@ package tinygo
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
-	"github.com/kdada/tinygo/info"
-	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
 )
 
@@ -15,24 +14,11 @@ import (
 var sessionProvider session.SessionProvider
 
 func initSession(sessionType string, expire int64) {
-	//暂时只有内存Session
-	sessionProvider = session.NewMemSessionProvider(expire)
-}
-
-// 生成静态路由
-func generateStaticRouters() {
-	for _, path := range tinyConfig.static {
-		var components = strings.Split(path, `\/`)
-		var count = len(components)
-		var lastRouter = RootRouter
-		if count > 2 {
-			for _, c := range components {
-				var space = router.NewSpaceRouter(c)
-				lastRouter.AddChild(space)
-				lastRouter = space
-			}
-		}
-		lastRouter.AddChild(router.NewStaticRouter(components[count-1], path))
+	var err error
+	sessionProvider, err = session.NewSessionProvider(session.SessionType(sessionType), expire)
+	if err != nil {
+		//会话创建失败 严重错误
+		panic(err)
 	}
 }
 
@@ -41,32 +27,44 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	var oldTime = time.Now().UnixNano()
 	dispatch(w, r)
 	var duration = (time.Now().UnixNano() - oldTime) / 1000000
-	fmt.Println("[Info]", duration, "ms ", r.URL.Path)
+	fmt.Println("["+r.Method+"]", duration, "ms ", r.URL.Path)
 }
 
 // dispatch 路由查询处理
 func dispatch(w http.ResponseWriter, r *http.Request) {
 	var context = HttpContext{}
-	context.urlParts = strings.Split(r.URL.Path, "/")[1:]
+	context.urlParts = strings.Split(r.URL.Path, "/")
+	var i = len(context.urlParts) - 1
+	for ; i > 0; i-- {
+		if context.urlParts[i] != "" {
+			break
+		}
+	}
+	context.urlParts = context.urlParts[:i+1]
 	context.request = r
 	context.responseWriter = w
-	//添加Session信息
-	var cookie, err = context.request.Cookie(info.DefaultSessionCookieName)
-	var ss session.Session
-	var ok bool = false
-	if err == nil {
-		ss, ok = sessionProvider.Session(cookie.Value)
+	if sessionProvider != nil {
+		//添加Session信息
+		var cookie, err = context.request.Cookie(DefaultSessionCookieName)
+		var ss session.Session
+		var ok bool = false
+		if err == nil {
+			ss, ok = sessionProvider.Session(cookie.Value)
+		}
+		if !ok {
+			ss, ok = sessionProvider.CreateSession()
+			context.responseWriter.Header().Set("Set-Cookie", DefaultSessionCookieName+"="+ss.SessionId()+";Max-Age="+strconv.Itoa(int(tinyConfig.sessionexpire))+";Path=/")
+		}
+		if ok {
+			context.session = ss
+		}
 	}
-	if !ok {
-		ss, ok = sessionProvider.CreateSession()
-		context.responseWriter.Header().Set("Set-Cookie", info.DefaultSessionCookieName+"="+ss.SessionId())
-	}
-	if ok {
-		context.session = ss
-	}
-
+	// 检索路由信息
 	var result = RootRouter.Pass(&context)
-	if !result {
+	if result {
+		//执行
+		context.execute()
+	} else {
 		//页面不存在
 		HttpNotFound(w, r)
 	}

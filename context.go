@@ -34,6 +34,11 @@ func (this *HttpContext) Request() *http.Request {
 	return this.request
 }
 
+// Session 返回Session
+func (this *HttpContext) Session() session.Session {
+	return this.session
+}
+
 // RouterParts 返回路由段
 func (this *HttpContext) RouterParts() []string {
 	return this.urlParts

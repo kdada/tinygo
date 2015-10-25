@@ -1,4 +1,7 @@
+// Package session 实现了基于内存的session管理功能
 package session
+
+import "sync"
 
 // Session
 type Session interface {
@@ -40,4 +43,30 @@ type SessionProvider interface {
 	Session(sessionId string) (Session, bool)
 	// Clean 清理过期Session
 	Clean()
+}
+
+// SessionProvider创建器
+type SessionProviderCreator func(expire int64) (SessionProvider, error)
+
+var (
+	mu       sync.Mutex                                     //生成器互斥锁
+	creators = make(map[SessionType]SessionProviderCreator) //配置解析器
+)
+
+// NewConfig 创建一个新的Config
+//  path:配置文件路径
+func NewSessionProvider(kind SessionType, expire int64) (SessionProvider, error) {
+	var creator, ok = creators[kind]
+	if !ok {
+		return nil, SessionErrorInvalidSessionKind.Format(kind).Error()
+	}
+	return creator(expire)
+}
+
+// RegisterSessionProviderCreator 注册SessionProvider创建器
+func RegisterSessionProviderCreator(kind SessionType, creator SessionProviderCreator) error {
+	mu.Lock()
+	defer mu.Unlock()
+	creators[kind] = creator
+	return nil
 }

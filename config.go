@@ -8,14 +8,15 @@ import (
 	"strings"
 
 	"github.com/kdada/tinygo/config"
-	"github.com/kdada/tinygo/info"
 )
 
 // NormalizePath 规范化路径
 // 规范化后统一使用/分隔符,所有绝对路径全部变为相对路径
-// 例如: \test\test.html ==> test/test.html
+//
+// 例如:
+//  \test\test.html ==> test/test.html
 func NormalizePath(path string) string {
-	return strings.TrimLeft(filepath.ToSlash(path), "/")
+	return strings.Trim(filepath.ToSlash(path), "/")
 }
 
 // 基本配置
@@ -26,6 +27,7 @@ var tinyConfig = struct {
 	port          uint16   //监听端口,可选,默认为80，https为true则默认为443
 	cert          string   //证书(PEM)路径,如果启用了https则必填
 	pkey          string   //私钥(PEM)路径,如果启用了https则必填
+	home          string   //首页地址
 	session       bool     //是否启用session
 	sessiontype   string   //session类型,参考tinygo/session,默认为memory
 	sessionexpire int64    //session过期时间,单位为秒
@@ -37,10 +39,10 @@ var tinyConfig = struct {
 }{}
 
 // loadConfig 加载配置
-// envPath:当前程序启动目录
+//  envPath:当前程序启动目录
 func loadConfig(envPath string) error {
 	tinyConfig.path = envPath
-	var configPath = filepath.Join(tinyConfig.path, info.DefaultConfigPath)
+	var configPath = filepath.Join(tinyConfig.path, DefaultConfigPath)
 	var cfg, err = config.NewConfig(config.ConfigTypeIni, configPath)
 	if err != nil {
 		//配置文件加载出错
@@ -74,6 +76,11 @@ func loadConfig(envPath string) error {
 			tinyConfig.cert, _ = global.String("cert")
 			//key
 			tinyConfig.pkey, _ = global.String("pkey")
+		}
+		//home
+		tinyConfig.home, err = global.String("home")
+		if err != nil {
+			tinyConfig.home = "/home/index"
 		}
 		//session
 		tinyConfig.session, err = global.Bool("session")
@@ -125,20 +132,21 @@ func loadConfig(envPath string) error {
 }
 
 // 判断当前是否是发布模式
+// 由配置文件的mode决定
 func IsRelease() bool {
 	return tinyConfig.mode == "release"
 }
 
 // getViewFilePath 返回视图文件路径的绝对路径
-// viewFilePath:相对于视图目录的文件路径
-// layout/layout.html ==> {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html
+//  viewFilePath:相对于视图目录的文件路径
+//  layout/layout.html ==> {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html
 func getViewFilePath(viewFilePath string) string {
 	return filepath.Join(tinyConfig.path, tinyConfig.view, viewFilePath)
 }
 
 // generateViewFilePath 返回视图文件相对tinyConfig.view的路径
-// viewFilePath:视图文件绝对路径
-// {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html ==> layout/layout.html
+//  viewFilePath:视图文件绝对路径
+//  {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html ==> layout/layout.html
 func generateViewFilePath(viewFilePath string) string {
 	viewFilePath, _ = filepath.Rel(filepath.Join(tinyConfig.path, tinyConfig.view), viewFilePath)
 	return viewFilePath
@@ -148,7 +156,7 @@ func generateViewFilePath(viewFilePath string) string {
 // 为了确保顺利解析,即使在不同目录中
 // layout文件不得与任何视图文件重名,layout文件之间也不允许重名
 var layoutConfig = struct {
-	LayoutMap     map[string]string //为布局文件定义别名
+	LayoutMap     map[string]string //为布局文件定义别名,map[布局文件别名]布局文件
 	DefaultLayout string            //默认布局文件别名
 	LayoutSpec    map[string]string //特别指定目录或文件对应的布局文件,map[目录或文件]布局文件别名
 }{
@@ -159,7 +167,7 @@ var layoutConfig = struct {
 
 // loadLayoutConfig 加载布局配置
 func loadLayoutConfig() error {
-	var configPath = getViewFilePath(info.DefaultLayoutConfigFileName)
+	var configPath = getViewFilePath(DefaultLayoutConfigFileName)
 	var content, err = ioutil.ReadFile(configPath)
 	if err == nil {
 		err = json.Unmarshal(content, &layoutConfig)
@@ -170,6 +178,7 @@ func loadLayoutConfig() error {
 		//路径规范化
 		//统一规范为相对路径
 		// \layout\layout.html ==> layout/layout.html
+		// \layout\ ==> layout
 		for k, v := range layoutConfig.LayoutMap {
 			layoutConfig.LayoutMap[k] = NormalizePath(v)
 		}
@@ -193,7 +202,7 @@ func isLayoutFile(filePath string) bool {
 }
 
 // getLayout 获取指定文件的Layout文件
-// filePath:相对于tinyConfig.view的文件路径
+//  filePath:相对于tinyConfig.view的文件路径
 func getLayoutFile(filePath string) (string, bool) {
 	filePath = NormalizePath(filePath)
 	var layout, ok = layoutConfig.LayoutSpec[filePath]

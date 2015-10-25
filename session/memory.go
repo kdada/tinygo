@@ -85,7 +85,7 @@ func (this *MemSession) SetFloat(key string, value float64) {
 }
 
 // SetDeadline 设置有效期限
-// second:从当前时间开始有效的秒数
+//  second:从当前时间开始有效的秒数
 func (this *MemSession) SetDeadline(second int64) {
 	this.deadline = time.Now().Unix() + second
 }
@@ -107,12 +107,12 @@ type MemSessionProvider struct {
 	defaultExpire  int64                  //默认过期时间
 }
 
-// NewMemSessionProvider 创建Session提供器
-func NewMemSessionProvider(expire int64) SessionProvider {
+// newMemSessionProvider 创建Session提供器
+func newMemSessionProvider(expire int64) (SessionProvider, error) {
 	var provider = new(MemSessionProvider)
 	provider.sessions = make(map[string]*MemSession, 100)
 	provider.defaultExpire = expire
-	return provider
+	return provider, nil
 }
 
 // CreateSession 创建Session

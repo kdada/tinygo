@@ -7,8 +7,8 @@ type FunctionRouter struct {
 }
 
 // Pass 传递指定的路由环境给当前的路由器
-// context: 上下文环境
-// return: 返回路由是否处理了该请求
+//  context: 上下文环境
+//  return: 返回路由是否处理了该请求
 // 如果请求已经被处理了,则该请求不应该继续被传递
 func (this *FunctionRouter) Pass(context RouterContext) bool {
 	var parts = context.RouterParts()

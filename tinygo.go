@@ -1,3 +1,4 @@
+// Package tinygo 实现了一个轻量级的Http Server框架
 package tinygo
 
 import (
@@ -32,7 +33,10 @@ func Run() {
 		//初始化Session机制
 		initSession(tinyConfig.sessiontype, tinyConfig.sessionexpire)
 	}
-
+	if tinyConfig.home != "" {
+		//设置首页
+		SetHomePage(tinyConfig.home)
+	}
 	//启动
 	http.HandleFunc("/", handler)
 	var port = fmt.Sprintf(":%d", tinyConfig.port)
@@ -51,22 +55,22 @@ func Run() {
 
 }
 
-// HttpNotFound 页面不存在
+// HttpNotFound 返回页面不存在(404)错误
 func HttpNotFound(w http.ResponseWriter, r *http.Request) {
 	if tinyConfig.pageerr != "" {
-		http.ServeFile(w, r, tinyConfig.pageerr)
 		w.WriteHeader(404)
+		ParseTemplate(w, r, tinyConfig.pageerr, nil)
 	} else {
 		http.NotFound(w, r)
 	}
 }
 
-// Redirect 临时重定向
+// Redirect 302重定向
 func Redirect(w http.ResponseWriter, r *http.Request, url string) {
 	http.Redirect(w, r, url, 302)
 }
 
-// RedirectPermanently 永久重定向
+// RedirectPermanently 301重定向
 func RedirectPermanently(w http.ResponseWriter, r *http.Request, url string) {
 	http.Redirect(w, r, url, 301)
 }

@@ -29,7 +29,7 @@ func (this *RegSegment) Parse(str string) (map[string]string, error) {
 }
 
 // ParseReg 解析正则路由段字符串
-// return:如果可以解析出正则内容,则返回RegSegment,否则返回nil
+//  return:如果可以解析出正则内容,则返回RegSegment,否则返回nil
 func ParseReg(exp string) (*RegSegment, error) {
 	var rs = new(RegSegment)
 	rs.Keys = make([]string, 0)

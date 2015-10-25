@@ -1,8 +1,6 @@
 package router
 
-import (
-	"strings"
-)
+import "strings"
 
 // 空间路由
 // 空间路由仅用于隔离路由空间,本身并不具备任何功能
@@ -23,8 +21,8 @@ func (this *SpaceRouter) SetDefaultPage(ref string) {
 }
 
 // Pass 传递指定的路由环境给当前的路由器
-// context: 上下文环境
-// return: 返回路由是否处理了该请求
+//  context: 上下文环境
+//  return: 返回路由是否处理了该请求
 // 如果请求已经被处理了,则该请求不应该继续被传递
 func (this *SpaceRouter) Pass(context RouterContext) bool {
 	var parts = context.RouterParts()

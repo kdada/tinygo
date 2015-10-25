@@ -13,7 +13,7 @@ func NewRootRouter() Router {
 }
 
 // NewSpaceRouter 创建空间路由
-// name:路由名称
+//  name:路由名称
 func NewSpaceRouter(name string) Router {
 	var router = new(SpaceRouter)
 	router.Init(name)
@@ -21,11 +21,11 @@ func NewSpaceRouter(name string) Router {
 }
 
 // NewStaticRouter 创建控制器方法路由
-// name:静态路由名
-// path:静态文件本地目录
+//  name:静态路由名
+//  path:静态文件本地目录
 // 例如
-// name "static"
-// path "content/static/"
+//  name "static"
+//  path "content/static/"
 // 即url static/css/index.css 映射为本地目录 content/static/css/index.css
 func NewStaticRouter(name, path string) Router {
 	var router = new(StaticRouter)
@@ -35,7 +35,7 @@ func NewStaticRouter(name, path string) Router {
 }
 
 // NewControllerRouter 创建控制器方法路由
-// instance:结构体实例,必须是结构体指针,并且在Routers方法中返回方法路由信息
+//  instance:结构体实例,必须是结构体指针,并且在Routers方法中返回方法路由信息
 func NewControllerRouter(instance Controller) Router {
 	var ptrType = reflect.TypeOf(instance)
 	if ptrType.Kind() == reflect.Ptr && ptrType.Elem().Kind() == reflect.Struct {
@@ -68,7 +68,7 @@ func NewControllerRouter(instance Controller) Router {
 }
 
 // NewRestfulControllerRouter 创建Restful控制器路由
-// instance:结构体实例,必须是结构体指针
+//  instance:结构体实例,必须是结构体指针
 func NewRestfulControllerRouter(instance RestfulController) Router {
 	var ptrType = reflect.TypeOf(instance)
 	if ptrType.Kind() == reflect.Ptr && ptrType.Elem().Kind() == reflect.Struct {

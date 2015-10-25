@@ -22,7 +22,7 @@ func (this *BaseRouter) Init(name string) {
 		this.segment = segment
 		this.reg = true
 	}
-	this.name = name
+	this.name = strings.ToLower(name)
 	this.children = make(map[string]Router, 0)
 	this.regchildren = make(map[string]Router, 0)
 	this.beforeFilters = make([]RouterFilter, 0)
@@ -66,8 +66,8 @@ func (this *BaseRouter) SetLevel(level int) {
 }
 
 // Pass 传递指定的路由环境给当前的路由器
-// context: 上下文环境
-// return: 返回路由是否处理了该请求
+//  context: 上下文环境
+//  return: 返回路由是否处理了该请求
 // 如果请求已经被处理了,则该请求不应该继续被传递
 func (this *BaseRouter) Pass(context RouterContext) bool {
 	return false
@@ -79,7 +79,7 @@ func (this *BaseRouter) check(route string) (map[string]string, bool) {
 		var m, err = this.segment.Parse(route)
 		return m, err == nil
 	} else {
-		return nil, route == this.name
+		return nil, strings.EqualFold(route, this.name)
 	}
 }
 
@@ -123,7 +123,7 @@ func (this *BaseRouter) AddChildren(routers ...Router) bool {
 }
 
 // RemoveChild 移除子路由
-// name:子路由名称
+//  name:子路由名称
 func (this *BaseRouter) RemoveChild(name string) bool {
 	var _, ok = this.children[name]
 	if ok {
@@ -154,7 +154,7 @@ func (this *BaseRouter) RemoveBeforeFilter(filter RouterFilter) bool {
 }
 
 // ExecBeforeFilter 过滤请求
-// return:返回true表示继续处理,否则终止路由过程
+//  return:返回true表示继续处理,否则终止路由过程
 func (this *BaseRouter) ExecBeforeFilter(context RouterContext) bool {
 	for _, router := range this.beforeFilters {
 		var goon = router.Filter(context)
@@ -186,7 +186,7 @@ func (this *BaseRouter) RemoveAfterFilter(filter RouterFilter) bool {
 }
 
 // ExecAfterFilter 过滤请求
-// return:返回true表示继续处理,否则终止路由过程
+//  return:返回true表示继续处理,否则终止路由过程
 func (this *BaseRouter) ExecAfterFilter(context RouterContext) bool {
 	for _, router := range this.afterFilters {
 		var goon = router.Filter(context)

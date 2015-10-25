@@ -1,4 +1,4 @@
-package info
+package tinygo
 
 // Http方法常量
 type HttpMethod string
@@ -10,25 +10,25 @@ const (
 	HttpMethodDelete HttpMethod = "DELETE" //DELETE方法
 )
 
-// 默认配置文件路径
+// 默认配置文件名
 const DefaultConfigPath = "web.cfg"
 
 // 默认布局配置文件名
 const DefaultLayoutConfigFileName = "layout.json"
 
-//默认模板文件扩展名
+// 默认视图文件扩展名
 const DefaultTemplateExt = ".html"
 
-//默认模板文件内模板名,用于返回部分视图时使用
+// 默认模板文件内模板名,用于返回部分视图时使用
 const DefaultTemplateName = "Content"
 
-//默认Cookie名
+// 默认Session Cookie名
 const DefaultSessionCookieName = "__SessionId"
 
-//默认CSRF名
+// 默认CSRF Cookie 名
 const DefaultCSRFCookieName = "__CSRFId"
 
-// Api格式
+// Api格式类型
 type ApiType string
 
 const (

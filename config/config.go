@@ -1,3 +1,4 @@
+// Package config 实现了一个ini配置文件解析器
 package config
 
 import (
@@ -36,7 +37,7 @@ var (
 )
 
 // NewConfig 创建一个新的Config
-// path:配置文件路径
+//  path:配置文件路径
 func NewConfig(kind ConfigType, path string) (Config, error) {
 	var data, err = ioutil.ReadFile(path)
 	if err != nil {
