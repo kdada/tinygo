@@ -121,7 +121,6 @@ layout.json 布局配置文件范例如下
   
   
 开发中:  
-(1) 过期Session清理(是否需要暂停所有Session获取?)  SessionId生成方法需要变更  
-(2) Cookie设置  
-(3) CSRF  
-(4) template func  
+(1) 过期Session清理(是否需要暂停所有Session获取?)  
+(2) CSRF  
+(3) template func  

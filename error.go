@@ -10,7 +10,7 @@ type TinyGoError string
 
 // 错误码
 const (
-	TinyGoErrorConfigError TinyGoError = "T10010:ConfigErrorInvalidKey,无效的key(%s)"
+	TinyGoErrorParamNotFoundError TinyGoError = "T10110:TinyGoErrorParamNotFoundError,不存在的key(%s)"
 )
 
 // Format 格式化错误信息并生成新的错误信息

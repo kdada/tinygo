@@ -1,7 +1,10 @@
 package tinygo
 
 import (
+	"mime/multipart"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
@@ -13,7 +16,7 @@ type HttpContext struct {
 	request        *http.Request          //http请求
 	responseWriter http.ResponseWriter    //http响应
 	session        session.Session        //http会话
-	Params         map[string]string      //http参数,包含url,query,form的所有参数
+	params         map[string]string      //http参数,包含url,query,form的所有参数
 	parsed         bool                   //存储参数是否已经解析过
 	routers        []router.Router        //分派成功的路由链
 	executor       router.ContextExecutor //存储最终执行Context的执行器
@@ -39,6 +42,97 @@ func (this *HttpContext) Session() session.Session {
 	return this.session
 }
 
+// Cookie 返回指定cookie的值
+func (this *HttpContext) Cookie(name string) (string, error) {
+	var cookie, err = this.request.Cookie(name)
+	if err == nil {
+		return cookie.Value, nil
+	}
+	return "", err
+}
+
+// AddSimpleCookie 添加一个简单的cookie,该cookie使用/作为path
+//  name:最好只使用英文和数字作为名称,不得包含换行符回车符分号冒号等http特殊字符
+//  value:最好只使用英文和数字作为值,不得包含换行符回车符分号冒号等http特殊字符
+func (this *HttpContext) AddSimpleCookie(name string, value string, age int) {
+	var cookie = new(http.Cookie)
+	cookie.Name = name
+	cookie.Value = value
+	if age > 0 {
+		cookie.MaxAge = age
+		cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
+	}
+	cookie.HttpOnly = false
+	cookie.Path = "/"
+	this.responseWriter.Header().Add("Set-Cookie", cookie.String())
+}
+
+// AddCookie 添加一个cookie,cookie信息必须完整,若设置了cookie.MaxAge则必须设置cookie.Expires
+func (this *HttpContext) AddCookie(cookie *http.Cookie) {
+	this.responseWriter.Header().Add("Set-Cookie", cookie.String())
+}
+
+// ParseParams 解析参数,将路由参数,query string,表单都解析到this.Request.Form中
+func (this *HttpContext) ParseParams() error {
+	if !this.parsed {
+		this.parsed = true
+		var err = this.request.ParseForm()
+		if err != nil {
+			return err
+		}
+		for k, v := range this.params {
+			this.request.Form.Set(k, v)
+		}
+	}
+	return nil
+}
+
+// ParamString 获取http参数字符串
+func (this *HttpContext) ParamString(key string) string {
+	return this.request.FormValue(key)
+}
+
+// ParamString 获取http参数字符串数组
+func (this *HttpContext) ParamStringArray(key string) ([]string, error) {
+	var result, ok = this.request.Form[key]
+	if ok {
+		return result, nil
+	}
+	return nil, TinyGoErrorParamNotFoundError.Format(key).Error()
+}
+
+// ParamString 获取http参数字符串
+func (this *HttpContext) ParamBool(key string) (bool, error) {
+	var result = this.request.FormValue(key)
+	return strconv.ParseBool(result)
+}
+
+// ParamString 获取http参数字符串
+func (this *HttpContext) ParamInt(key string) (int64, error) {
+	var result = this.request.FormValue(key)
+	return strconv.ParseInt(result, 10, 64)
+
+}
+
+// ParamString 获取http参数字符串
+func (this *HttpContext) ParamFloat(key string) (float64, error) {
+	var result = this.request.FormValue(key)
+	return strconv.ParseFloat(result, 64)
+
+}
+
+// ParamString 获取http参数文件
+func (this *HttpContext) ParamFile(key string) (multipart.File, *multipart.FileHeader, error) {
+	return this.request.FormFile(key)
+}
+
+// WriteString 将字符串写入http response流
+func (this *HttpContext) WriteString(value string) error {
+	this.responseWriter.Write([]byte(value))
+}
+
+/////////以下为路由使用方法,一般不需要使用/////////
+
 // RouterParts 返回路由段
 func (this *HttpContext) RouterParts() []string {
 	return this.urlParts
@@ -51,12 +145,12 @@ func (this *HttpContext) SetRouterParts(parts []string) {
 
 // AddParams 添加路由参数
 func (this *HttpContext) AddRouterParams(key, value string) {
-	this.Params[key] = value
+	this.params[key] = value
 }
 
 // RemoveRouterParams 移除路由参数
 func (this *HttpContext) RemoveRouterParams(key string) {
-	delete(this.Params, key)
+	delete(this.params, key)
 }
 
 // AddRouter 添加执行路由,最后一级路由最先添加
@@ -67,21 +161,6 @@ func (this *HttpContext) AddRouter(router router.Router) {
 // AddContextExector 添加执行器
 func (this *HttpContext) AddContextExecutor(exector router.ContextExecutor) {
 	this.executor = exector
-}
-
-// ParseParams 解析参数,将路由参数,query string,表单都解析到this.Request.Form中
-func (this *HttpContext) ParseParams() error {
-	if !this.parsed {
-		this.parsed = true
-		var err = this.request.ParseForm()
-		if err != nil {
-			return err
-		}
-		for k, v := range this.Params {
-			this.request.Form.Set(k, v)
-		}
-	}
-	return nil
 }
 
 // 处理该HttpContext

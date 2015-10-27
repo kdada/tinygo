@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
-	"strconv"
-	"time"
 )
 
 // 根据视图路径映射视图模板
@@ -141,89 +138,6 @@ func mapStructToMap(value reflect.Value, data map[interface{}]interface{}) {
 					}
 					data[fieldName] = fieldValue.Interface()
 				}
-			}
-		}
-	}
-}
-
-// ParseUrlValueToStruct 将url值解析到结构体中
-//  urlValues:url值
-//  value:结构体的反射值
-func ParseUrlValueToStruct(urlValues url.Values, value reflect.Value) {
-	if value.Kind() == reflect.Struct {
-		for i := 0; i < value.NumField(); i++ {
-			var fieldValue = value.Field(i)
-			var fieldType = value.Type().Field(i)
-			if fieldType.Anonymous {
-				//匿名组合字段,进行递归解析
-				ParseUrlValueToStruct(urlValues, fieldValue)
-			} else {
-				//非匿名字段
-				if fieldValue.CanSet() {
-					var fieldName = fieldType.Tag.Get("from")
-					if fieldName == "-" {
-						//如果是-,则忽略当前字段
-						continue
-					}
-					if fieldName == "" {
-						//如果为空,则使用字段名
-						fieldName = fieldType.Name
-					}
-					var urlValue = urlValues.Get(fieldName)
-					switch fieldType.Type.Kind() {
-					case reflect.Bool:
-						result, err := strconv.ParseBool(urlValue)
-						fieldValue.SetBool(result && err == nil)
-					case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-						result, err := strconv.ParseInt(urlValue, 10, 64)
-						if err == nil {
-							fieldValue.SetInt(result)
-						} else {
-							fieldValue.SetInt(0)
-						}
-
-					case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-						result, err := strconv.ParseUint(urlValue, 10, 64)
-						if err == nil {
-							fieldValue.SetUint(result)
-						} else {
-							fieldValue.SetUint(0)
-						}
-					case reflect.Float32, reflect.Float64:
-						result, err := strconv.ParseFloat(urlValue, 64)
-						if err == nil {
-							fieldValue.SetFloat(result)
-						} else {
-							fieldValue.SetFloat(0)
-						}
-					case reflect.Interface:
-						fieldValue.Set(reflect.ValueOf(urlValue))
-					case reflect.String:
-						fieldValue.SetString(urlValue)
-					case reflect.Struct:
-						switch fieldType.Type.String() {
-						case "time.Time":
-							//仅支持该格式,忽略时区
-							result, err := time.Parse("2006-01-02 15:04:05", urlValue)
-							if err == nil {
-								fieldValue.Set(reflect.ValueOf(result))
-							}
-						}
-					case reflect.Slice:
-						if fieldType.Type == reflect.TypeOf([]int(nil)) {
-							stringValue := urlValues[fieldName]
-							intValue := make([]int, len(stringValue), len(stringValue))
-							for i := 0; i < len(intValue); i++ {
-								intValue[i], _ = strconv.Atoi(stringValue[i])
-							}
-							fieldValue.Set(reflect.ValueOf(intValue))
-						} else if fieldType.Type == reflect.TypeOf([]string(nil)) {
-							stringValue := urlValues[fieldName]
-							fieldValue.Set(reflect.ValueOf(stringValue))
-						}
-					}
-				}
-
 			}
 		}
 	}

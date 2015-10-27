@@ -55,22 +55,17 @@ func Run() {
 
 }
 
-// HttpNotFound 返回页面不存在(404)错误
-func HttpNotFound(w http.ResponseWriter, r *http.Request) {
-	if tinyConfig.pageerr != "" {
-		w.WriteHeader(404)
-		ParseTemplate(w, r, tinyConfig.pageerr, nil)
-	} else {
-		http.NotFound(w, r)
-	}
+// SafeEnvironment在安全环境中执行f方法,安全环境中出现panic不会引起进程崩溃
+func SafeEnvironment(f func()) {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Println(err)
+		}
+	}()
+	f()
 }
 
-// Redirect 302重定向
-func Redirect(w http.ResponseWriter, r *http.Request, url string) {
-	http.Redirect(w, r, url, 302)
-}
-
-// RedirectPermanently 301重定向
-func RedirectPermanently(w http.ResponseWriter, r *http.Request, url string) {
-	http.Redirect(w, r, url, 301)
+// AsyncSafeEnvironment在一个goroutine安全环境中执行f方法,安全环境中出现panic不会引起进程崩溃
+func AsyncSafeEnvironment(f func()) {
+	go SafeEnvironment(f)
 }
