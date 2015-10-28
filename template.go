@@ -1,7 +1,6 @@
 package tinygo
 
 import (
-	"fmt"
 	"html/template"
 	"net/http"
 	"os"
@@ -24,7 +23,7 @@ func compileAllViews() {
 					if err == nil {
 						viewsMapper[filePath] = tmpl
 					} else {
-						fmt.Println(err)
+						Error(err)
 					}
 				}
 			}
@@ -42,10 +41,14 @@ func compileView(filePath string) (*template.Template, error) {
 		pathSlice = append(pathSlice, getViewFilePath(lastFile))
 		lastFile, _ = getLayoutFile(lastFile)
 	}
-	var tmpl, err = template.ParseFiles(pathSlice...)
+	var tmplName = filepath.Base(filePath)
+	var tmpl = template.New(tmplName)
+	tmpl.Funcs(new(CommonFunMap).FuncMap())
+	tmpl.Funcs(new(CsrfFuncMap).FuncMap())
+	var tmpls, err = tmpl.ParseFiles(pathSlice...)
 	if err == nil {
 		var name = filepath.Base(pathSlice[len(pathSlice)-1])
-		tmpl = tmpl.Lookup(name)
+		tmpl = tmpls.Lookup(name)
 	}
 	return tmpl, err
 }
@@ -57,7 +60,7 @@ func viewTemplate(filePath string) *template.Template {
 	if !ok {
 		tmpl, err := compileView(filePath)
 		if err != nil {
-			fmt.Println(err)
+			Error(err)
 			return nil
 		}
 		return tmpl
@@ -72,7 +75,7 @@ func partialViewTemplate(filePath string) *template.Template {
 	if !ok {
 		tmpl, err := compileView(filePath)
 		if err != nil {
-			fmt.Println(err)
+			Error(err)
 			return nil
 		}
 		return tmpl.Lookup(path.Base(filePath))
@@ -81,17 +84,17 @@ func partialViewTemplate(filePath string) *template.Template {
 }
 
 // ParseTemplate 分析指定模板,如果模板不存在或者出错,则会返回HttpNotFound
-//  w:http响应写入器
-//  r:http请求
+//  context:http上下文
 //  path:相对于tinyConfig.ViewPath的文件路径,分隔符必须为/
 //  data:要解析到模板中的数据
-func ParseTemplate(w http.ResponseWriter, r *http.Request, path string, data interface{}) {
+func ParseTemplate(context *HttpContext, path string, data interface{}) {
 	var tmpl = viewTemplate(path)
 	if tmpl != nil {
-		err := tmpl.Execute(w, data)
+		tmpl = tmpl.Funcs((&CsrfFuncMap{context}).FuncMap())
+		err := tmpl.Execute(context.responseWriter, data)
 		if err != nil {
-			fmt.Println(err)
-			HttpNotFound(w, r)
+			Error(err)
+			http.NotFound(context.responseWriter, context.request)
 		}
 	}
 }
@@ -99,21 +102,20 @@ func ParseTemplate(w http.ResponseWriter, r *http.Request, path string, data int
 // ParsePartialTemplate 分析指定部分模板,如果模板不存在或者出错,则会返回HttpNotFound
 //
 // 默认情况下,会首先寻找名为"Content"的模板并执行,如果"Content"模板不存在,则直接执行文件模板
-//  w:http响应写入器
-//  r:http请求
+//  context:http上下文
 //  path:相对于tinyConfig.ViewPath的文件路径,分隔符必须为/
 //  data:要解析到模板中的数据
-func ParsePartialTemplate(w http.ResponseWriter, r *http.Request, path string, data interface{}) {
+func ParsePartialTemplate(context *HttpContext, path string, data interface{}) {
 	var tmpl = partialViewTemplate(path)
 	if tmpl != nil {
 		content := tmpl.Lookup("Content")
 		if content != nil {
 			tmpl = content
 		}
-		err := tmpl.Execute(w, data)
+		err := tmpl.Execute(context.responseWriter, data)
 		if err != nil {
-			fmt.Println(err)
-			HttpNotFound(w, r)
+			Error(err)
+			http.NotFound(context.responseWriter, context.request)
 		}
 	}
 }

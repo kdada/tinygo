@@ -1,17 +1,13 @@
 package session
 
 import (
-	"encoding/base64"
-	"math/rand"
-	"net"
-	"strconv"
-	"strings"
+	"sync"
 	"time"
-	"unsafe"
 )
 
-//内存Session
+// 内存Session,每次操作都会使Session有效时间延长
 type MemSession struct {
+	provider  *MemSessionProvider    //会话提供器
 	sessionId string                 //会话id
 	data      map[string]interface{} //数据
 	deadline  int64                  //死亡时间(秒),从1970年开始
@@ -33,6 +29,7 @@ func (this *MemSession) SessionId() string {
 // Value 获取值
 func (this *MemSession) Value(key string) (interface{}, bool) {
 	v, ok := this.data[key]
+	this.SetDeadline(this.provider.defaultExpire)
 	return v, ok
 }
 
@@ -40,6 +37,7 @@ func (this *MemSession) Value(key string) (interface{}, bool) {
 func (this *MemSession) String(key string) (string, bool) {
 	v, ok := this.data[key]
 	s, ok := v.(string)
+	this.SetDeadline(this.provider.defaultExpire)
 	return s, ok
 }
 
@@ -47,6 +45,7 @@ func (this *MemSession) String(key string) (string, bool) {
 func (this *MemSession) Int(key string) (int64, bool) {
 	v, ok := this.data[key]
 	s, ok := v.(int64)
+	this.SetDeadline(this.provider.defaultExpire)
 	return s, ok
 }
 
@@ -54,6 +53,7 @@ func (this *MemSession) Int(key string) (int64, bool) {
 func (this *MemSession) Bool(key string) (bool, bool) {
 	v, ok := this.data[key]
 	s, ok := v.(bool)
+	this.SetDeadline(this.provider.defaultExpire)
 	return s, ok
 }
 
@@ -61,32 +61,44 @@ func (this *MemSession) Bool(key string) (bool, bool) {
 func (this *MemSession) Float(key string) (float64, bool) {
 	v, ok := this.data[key]
 	s, ok := v.(float64)
+	this.SetDeadline(this.provider.defaultExpire)
 	return s, ok
 }
 
 // SetValue 设置值
 func (this *MemSession) SetValue(key string, value interface{}) {
 	this.data[key] = value
+	this.SetDeadline(this.provider.defaultExpire)
 }
 
 // SetString 设置字符串
 func (this *MemSession) SetString(key string, value string) {
 	this.data[key] = value
+	this.SetDeadline(this.provider.defaultExpire)
 }
 
 // SetInt 设置整数值
 func (this *MemSession) SetInt(key string, value int64) {
 	this.data[key] = value
+	this.SetDeadline(this.provider.defaultExpire)
 }
 
 // SetBool 设置bool值
 func (this *MemSession) SetBool(key string, value bool) {
 	this.data[key] = value
+	this.SetDeadline(this.provider.defaultExpire)
 }
 
 // SetFloat 设置浮点值
 func (this *MemSession) SetFloat(key string, value float64) {
 	this.data[key] = value
+	this.SetDeadline(this.provider.defaultExpire)
+}
+
+// Delete 删除键
+func (this *MemSession) Delete(key string) {
+	delete(this.data, key)
+	this.SetDeadline(this.provider.defaultExpire)
 }
 
 // SetDeadline 设置有效期限
@@ -110,6 +122,7 @@ type MemSessionProvider struct {
 	sessionCounter int                    //session计数器
 	sessions       map[string]*MemSession //存储Session
 	defaultExpire  int64                  //默认过期时间
+	rwm            sync.RWMutex           //读写锁
 }
 
 // newMemSessionProvider 创建Session提供器
@@ -122,8 +135,11 @@ func newMemSessionProvider(expire int64) (SessionProvider, error) {
 
 // CreateSession 创建Session
 func (this *MemSessionProvider) CreateSession() (Session, bool) {
-	var sessionId = guid()
+	this.rwm.Lock()
+	defer this.rwm.Unlock()
+	var sessionId = Guid()
 	var ss = newMemSession(sessionId)
+	ss.provider = this
 	ss.SetDeadline(this.defaultExpire)
 	this.sessionCounter++
 	this.sessions[sessionId] = ss
@@ -132,6 +148,8 @@ func (this *MemSessionProvider) CreateSession() (Session, bool) {
 
 // Session 获取Session
 func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
+	this.rwm.RLock()
+	defer this.rwm.RUnlock()
 	var ss, ok = this.sessions[sessionId]
 	if ok && ss.Dead() {
 		delete(this.sessions, sessionId)
@@ -142,35 +160,11 @@ func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
 
 // Clean 清理过期Session
 func (this *MemSessionProvider) Clean() {
+	this.rwm.Lock()
+	defer this.rwm.Unlock()
 	for k, v := range this.sessions {
 		if v.Dead() {
 			delete(this.sessions, k)
 		}
 	}
-}
-
-// guid 生成全局唯一标志
-func guid() string {
-	var iface, err = net.InterfaceByIndex(0)
-	var macAddr = ""
-	if err == nil {
-		macAddr = iface.HardwareAddr.String()
-	}
-	var x = new(byte)
-	var seed = time.Now().UnixNano()
-	var str = macAddr + strconv.Itoa(int(seed)) + strconv.Itoa(int(uintptr(unsafe.Pointer(x))))
-	var data = []byte(str)
-	rand.Seed(seed)
-	var r = rand.Intn(len(data))
-	var lendata = len(data)
-	for i := 0; i < lendata; i++ {
-		var temp = data[i]
-		data[i] = data[r]
-		data[r] = temp
-		r++
-		r %= lendata
-	}
-	var result = make([]byte, base64.StdEncoding.EncodedLen(lendata))
-	base64.StdEncoding.Encode(result, data)
-	return strings.ToUpper(strings.TrimRight(string(result), "="))
 }

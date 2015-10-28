@@ -27,6 +27,8 @@ type Session interface {
 	SetBool(key string, value bool)
 	// SetFloat 设置浮点值
 	SetFloat(key string, value float64)
+	// Delete 删除指定键
+	Delete(key string)
 	// SetDeadline 设置有效期限
 	SetDeadline(second int64)
 	// Dead 让Session立即过期

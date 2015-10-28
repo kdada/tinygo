@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -15,6 +16,9 @@ import (
 // Session提供器,默认为内存Session
 var sessionProvider session.SessionProvider
 
+// Csrf提供器,使用内存Session
+var csrfProvider session.SessionProvider
+
 // initSession 初始化session
 func initSession(sessionType string, expire int64) {
 	var err error
@@ -25,20 +29,56 @@ func initSession(sessionType string, expire int64) {
 	}
 }
 
+// cleanAllDeadSession 清理过期的session和csrf session
+func cleanAllDeadSession(expire int64) {
+	defer func() {
+		if err := recover(); err != nil {
+			Error(err)
+			go cleanAllDeadSession(expire)
+		}
+	}()
+	for true {
+		//清理间隔
+		time.Sleep(time.Duration(expire) * time.Second)
+		if sessionProvider != nil {
+			sessionProvider.Clean()
+		}
+		if csrfProvider != nil {
+			csrfProvider.Clean()
+		}
+	}
+}
+
+// initCsrfSession 初始化csrf session,csrf有效期与session相同
+func initCsrfSession(expire int64) {
+	var err error
+	csrfProvider, err = session.NewSessionProvider(session.SessionTypeMemory, expire)
+	if err != nil {
+		//会话创建失败 严重错误
+		panic(err)
+	}
+}
+
 // handler 统一路由处理方法
 func handler(w http.ResponseWriter, r *http.Request) {
 	var oldTime = time.Now().UnixNano()
-	SafeEnvironment(func() {
-		dispatch(w, r)
-	})
-	var duration = (time.Now().UnixNano() - oldTime) / 1000000
-	fmt.Println("["+r.Method+"]", duration, "ms ", r.URL.Path)
+	var found, static = dispatch(w, r)
+	if !static {
+		var duration = (time.Now().UnixNano() - oldTime) / 1000000
+		var foundstr = "  found  "
+		if !found {
+			foundstr = "not found"
+		}
+		fmt.Println("["+r.Method+"]", foundstr, duration, "ms ", r.URL.Path)
+	}
 }
 
 // dispatch 路由查询处理
-func dispatch(w http.ResponseWriter, r *http.Request) {
+//  return:(是否查找到路由,是否是静态路由)
+func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 	var context = HttpContext{}
-	context.urlParts = strings.Split(r.URL.Path, "/")
+	var url = filepath.Clean("/" + r.URL.Path)
+	context.urlParts = strings.Split(url, "/")
 	var i = len(context.urlParts) - 1
 	for ; i > 0; i-- {
 		if context.urlParts[i] != "" {
@@ -73,6 +113,31 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 			context.session = ss
 		}
 	}
+	if csrfProvider != nil {
+		//添加Csrf Session信息,csrf有效期与session相同
+		var cookieValue, err = context.Cookie(DefaultCSRFCookieName)
+		var ss session.Session
+		var ok bool = false
+		if err == nil {
+			ss, ok = csrfProvider.Session(cookieValue)
+		}
+		if !ok {
+			ss, ok = sessionProvider.CreateSession()
+			if ok {
+				var cookie = &http.Cookie{}
+				cookie.Name = DefaultCSRFCookieName
+				cookie.Value = ss.SessionId()
+				cookie.Path = "/"
+				cookie.MaxAge = int(tinyConfig.sessionexpire)
+				cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
+				cookie.HttpOnly = true
+				context.AddCookie(cookie)
+			}
+		}
+		if ok {
+			context.csrf = ss
+		}
+	}
 	// 检索路由信息
 	var result = RootRouter.Pass(&context)
 	if result {
@@ -82,13 +147,14 @@ func dispatch(w http.ResponseWriter, r *http.Request) {
 		//页面不存在
 		HttpNotFound(w, r)
 	}
+	return result, context.static
 }
 
 // HttpNotFound 返回页面不存在(404)错误
 func HttpNotFound(w http.ResponseWriter, r *http.Request) {
 	if tinyConfig.pageerr != "" {
 		w.WriteHeader(404)
-		ParseTemplate(w, r, tinyConfig.pageerr, nil)
+		ParseTemplate(&HttpContext{responseWriter: w, request: r}, tinyConfig.pageerr, nil)
 	} else {
 		http.NotFound(w, r)
 	}

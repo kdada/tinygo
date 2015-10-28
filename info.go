@@ -28,6 +28,9 @@ const DefaultSessionCookieName = "__SessionId"
 // 默认CSRF Cookie 名
 const DefaultCSRFCookieName = "__CSRFId"
 
+// 默认CSRF 表单名
+const DefaultCSRFTokenName = "csrf"
+
 // Api格式类型
 type ApiType string
 

@@ -31,6 +31,8 @@ var tinyConfig = struct {
 	session       bool     //是否启用session
 	sessiontype   string   //session类型,参考tinygo/session,默认为memory
 	sessionexpire int64    //session过期时间,单位为秒
+	csrf          bool     //是否启用csrf
+	csrfexpire    int64    //csrf token过期时间
 	static        []string //静态文件目录,默认为"content"
 	view          string   //视图文件目录,默认为"views"
 	pageerr       string   //默认错误页面路径,默认为空
@@ -97,6 +99,16 @@ func loadConfig(envPath string) error {
 		if err != nil {
 			tinyConfig.sessionexpire = 3600
 		}
+		//csrf
+		tinyConfig.csrf, err = global.Bool("csrf")
+		if err != nil {
+			tinyConfig.csrf = false
+		}
+		//csrfexpire
+		tinyConfig.csrfexpire, err = global.Int("csrfexpire")
+		if err != nil {
+			tinyConfig.csrfexpire = 3600
+		}
 		//static
 		paths, err := global.String("static")
 		if err != nil {
@@ -139,16 +151,16 @@ func IsRelease() bool {
 
 // getViewFilePath 返回视图文件路径的绝对路径
 //  viewFilePath:相对于视图目录的文件路径
-//  layout/layout.html ==> {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html
+//  layout/layout.html ==> {{tinyConfig.view}}/layout/layout.html
 func getViewFilePath(viewFilePath string) string {
-	return filepath.Join(tinyConfig.path, tinyConfig.view, viewFilePath)
+	return filepath.Join(tinyConfig.view, viewFilePath)
 }
 
 // generateViewFilePath 返回视图文件相对tinyConfig.view的路径
 //  viewFilePath:视图文件绝对路径
-//  {{tinyConfig.path}}/{{tinyConfig.view}}/layout/layout.html ==> layout/layout.html
+//  {{tinyConfig.view}}/layout/layout.html ==> layout/layout.html
 func generateViewFilePath(viewFilePath string) string {
-	viewFilePath, _ = filepath.Rel(filepath.Join(tinyConfig.path, tinyConfig.view), viewFilePath)
+	viewFilePath, _ = filepath.Rel(tinyConfig.view, viewFilePath)
 	return viewFilePath
 }
 
@@ -183,7 +195,8 @@ func loadLayoutConfig() error {
 			layoutConfig.LayoutMap[k] = NormalizePath(v)
 		}
 		for k, v := range layoutConfig.LayoutSpec {
-			layoutConfig.LayoutSpec[k] = NormalizePath(v)
+			delete(layoutConfig.LayoutSpec, k)
+			layoutConfig.LayoutSpec[NormalizePath(k)] = v
 		}
 		return nil
 	}

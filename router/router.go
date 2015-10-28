@@ -76,6 +76,10 @@ type RouterContext interface {
 	RouterParts() []string
 	// SetRouterParts 设置路由段
 	SetRouterParts(parts []string)
+	// Static 返回是否是静态路由
+	Static() bool
+	// SetStatic 设置当前上下文为静态路由上下文
+	SetStatic(static bool)
 	// AddRouterParams 添加路由参数
 	AddRouterParams(key, value string)
 	// RemoveRouterParams 移除路由参数

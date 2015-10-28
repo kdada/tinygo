@@ -15,12 +15,12 @@ func Run() {
 	var appFilePath, _ = exec.LookPath(os.Args[0])
 	var err = loadConfig(filepath.Dir(appFilePath))
 	if err != nil {
-		fmt.Println(err)
+		Error(err)
 		return
 	}
 	err = loadLayoutConfig()
 	if err != nil {
-		fmt.Println(err)
+		Error(err)
 		return
 	}
 	//生成静态路由
@@ -32,6 +32,14 @@ func Run() {
 	if tinyConfig.session {
 		//初始化Session机制
 		initSession(tinyConfig.sessiontype, tinyConfig.sessionexpire)
+	}
+	if tinyConfig.csrf {
+		//初始化csrf机制
+		initCsrfSession(tinyConfig.sessionexpire)
+	}
+	if tinyConfig.session || tinyConfig.csrf {
+		// 时间间隔为 4倍session有效时间
+		go cleanAllDeadSession(tinyConfig.sessionexpire * 4)
 	}
 	if tinyConfig.home != "" {
 		//设置首页
@@ -49,7 +57,7 @@ func Run() {
 		err = http.ListenAndServe(port, nil)
 	}
 	if err != nil {
-		fmt.Println(err)
+		Error(err)
 		return
 	}
 
@@ -59,7 +67,7 @@ func Run() {
 func SafeEnvironment(f func()) {
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println(err)
+			Error(err)
 		}
 	}()
 	f()

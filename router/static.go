@@ -35,6 +35,8 @@ func (this *StaticRouter) Pass(context RouterContext) bool {
 			var sre = &StaticRouterExecutor{currentPath}
 			context.AddRouter(this)
 			context.AddContextExecutor(sre)
+			//设置是静态路由
+			context.SetStatic(true)
 			return true
 		}
 	}

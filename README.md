@@ -76,7 +76,16 @@ session = true
 sessiontype = memory
 
 #session过期时间,单位为秒
-sessionexpire = 600
+#由于csrf也使用了session provider,因此该值对csrf的session也有效
+sessionexpire = 1800
+
+#是否启用csrf
+csrf = true
+
+#csrf的token过期时间,单位为秒
+#该过期时间不是csrf的session的过期时间,而是生成的每个csrf token的过期时间
+#csrf的session过期时间由sessionexpire决定
+csrfexpire = 300
 
 #静态文件目录,默认为"content",多个目录用;分隔
 static = content
@@ -100,13 +109,13 @@ layout.json 布局配置文件范例如下
 ```json
 {
 	"LayoutMap":{
-		"Default":"layout/layout.html"
+		"Default":"layout/layout.html",
 		"Index":"layout/layout.html"
 	},
 	"DefaultLayout":"Default",
 	"LayoutSpec":{
-		"home/index.html":"Index"
-		"home/login.html":"Default"
+		"home/index.html":"Index",
+		"home/login.html":"Default",
 		"xxhome/":"Index"
 	}
 }
@@ -119,8 +128,3 @@ layout.json 布局配置文件范例如下
   
   
   
-  
-开发中:  
-(1) 过期Session清理(是否需要暂停所有Session获取?)  
-(2) CSRF  
-(3) template func  

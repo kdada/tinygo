@@ -16,10 +16,12 @@ type HttpContext struct {
 	request        *http.Request          //http请求
 	responseWriter http.ResponseWriter    //http响应
 	session        session.Session        //http会话
+	csrf           session.Session        //csrf会话
 	params         map[string]string      //http参数,包含url,query,form的所有参数
 	parsed         bool                   //存储参数是否已经解析过
 	routers        []router.Router        //分派成功的路由链
 	executor       router.ContextExecutor //存储最终执行Context的执行器
+	static         bool                   //是否是静态路由
 }
 
 // Method 返回Http方法
@@ -35,6 +37,31 @@ func (this *HttpContext) ResponseWriter() http.ResponseWriter {
 // Request 返回Request
 func (this *HttpContext) Request() *http.Request {
 	return this.request
+}
+
+// CsrfToken生成一个新的csrf token
+func (this *HttpContext) CsrfToken() string {
+	if this.csrf != nil {
+		var newToken = session.Guid()
+		this.csrf.SetInt(newToken, time.Now().Unix())
+		return newToken
+	}
+	return ""
+}
+
+// ValidateCsrfToken 验证表单请求中是否存在csrf的token并且该token有效,验证后token即失效
+func (this *HttpContext) ValidateCsrfToken() bool {
+	if this.csrf != nil {
+		var token = this.ParamString(DefaultCSRFTokenName)
+		if token != "" {
+			var t, ok = this.csrf.Int(token)
+			if ok {
+				this.csrf.Delete(token)
+				return time.Now().Unix()-t <= tinyConfig.csrfexpire
+			}
+		}
+	}
+	return false
 }
 
 // Session 返回Session
@@ -128,7 +155,8 @@ func (this *HttpContext) ParamFile(key string) (multipart.File, *multipart.FileH
 
 // WriteString 将字符串写入http response流
 func (this *HttpContext) WriteString(value string) error {
-	this.responseWriter.Write([]byte(value))
+	var _, err = this.responseWriter.Write([]byte(value))
+	return err
 }
 
 /////////以下为路由使用方法,一般不需要使用/////////
@@ -141,6 +169,16 @@ func (this *HttpContext) RouterParts() []string {
 // SetRouterParts 设置路由段
 func (this *HttpContext) SetRouterParts(parts []string) {
 	this.urlParts = parts
+}
+
+// Static 返回是否是静态路由
+func (this *HttpContext) Static() bool {
+	return this.static
+}
+
+// SetStatic 设置当前上下文为静态路由上下文
+func (this *HttpContext) SetStatic(static bool) {
+	this.static = static
 }
 
 // AddParams 添加路由参数

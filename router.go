@@ -11,6 +11,9 @@ var RootRouter = router.NewRootRouter()
 
 // 生成静态路由
 func generateStaticRouters() {
+	//生成favicon.ico跳转路由
+	RootRouter.AddChild(router.NewStaticRouter("favicon.ico", "favicon.ico"))
+	//其他静态路由
 	for _, path := range tinyConfig.static {
 		var components = filepath.SplitList(path)
 		var count = len(components)

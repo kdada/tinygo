@@ -3,7 +3,6 @@ package tinygo
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -12,10 +11,10 @@ import (
 	"github.com/kdada/tinygo/router"
 )
 
-//视图数据类型
+// 视图数据类型
 type ViewData map[interface{}]interface{}
 
-//参数数据类型
+// 参数数据类型
 type ParamData map[string]string
 
 // 基础控制器
@@ -31,7 +30,7 @@ func (this *baseController) SetContext(context router.RouterContext) {
 	if ok {
 		this.Context = ctx
 	} else {
-		fmt.Println("context严重错误", context)
+		Error("context严重错误", context)
 	}
 	this.Data = make(map[interface{}]interface{}, 0)
 }
@@ -50,13 +49,13 @@ func (this *baseController) File(path string) {
 func (this *baseController) Json(value interface{}) {
 	var bytes, err = json.Marshal(value)
 	if err != nil {
-		fmt.Println(err)
+		Error(err)
 		this.HttpNotFound()
 	} else {
 		this.Context.responseWriter.Header().Set("Content-Type", "application/json")
 		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
-			fmt.Println(err)
+			Error(err)
 			this.Context.responseWriter.WriteHeader(404)
 		}
 	}
@@ -67,13 +66,13 @@ func (this *baseController) Json(value interface{}) {
 func (this *baseController) Xml(value interface{}) {
 	var bytes, err = xml.Marshal(value)
 	if err != nil {
-		fmt.Println(err)
+		Error(err)
 		this.HttpNotFound()
 	} else {
 		this.Context.responseWriter.Header().Set("Content-Type", "application/xml")
 		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
-			fmt.Println(err)
+			Error(err)
 			this.Context.responseWriter.WriteHeader(404)
 		}
 	}
@@ -142,13 +141,13 @@ func (this *baseController) SetData(data ...interface{}) {
 //  data:需要传递给网页的结构体(必须是指针)或map(必须是ViewData类型),能传递的字段必须是公开字段
 func (this *baseController) View(path string, data ...interface{}) {
 	this.SetData(data...)
-	ParseTemplate(this.Context.responseWriter, this.Context.request, path, this.Data)
+	ParseTemplate(this.Context, path, this.Data)
 }
 
 // PartialView 返回 控制器名(不含Controller)/方法名.html 页面无视layout设置
 func (this *baseController) PartialView(path string, data ...interface{}) {
 	this.SetData(data...)
-	ParsePartialTemplate(this.Context.responseWriter, this.Context.request, path, this.Data)
+	ParsePartialTemplate(this.Context, path, this.Data)
 
 }
 
@@ -168,7 +167,7 @@ func (this *baseController) ParseParams(params ...interface{}) {
 			if err == nil {
 				ParseUrlValueToStruct(this.Context.request.Form, paramValue.Elem())
 			} else {
-				fmt.Println(err)
+				Error(err)
 			}
 		}
 	}
