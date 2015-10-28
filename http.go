@@ -88,60 +88,62 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 	context.urlParts = context.urlParts[:i+1]
 	context.request = r
 	context.responseWriter = w
-	if sessionProvider != nil {
-		//添加Session信息
-		var cookieValue, err = context.Cookie(DefaultSessionCookieName)
-		var ss session.Session
-		var ok bool = false
-		if err == nil {
-			ss, ok = sessionProvider.Session(cookieValue)
-		}
-		if !ok {
-			ss, ok = sessionProvider.CreateSession()
-			if ok {
-				var cookie = &http.Cookie{}
-				cookie.Name = DefaultSessionCookieName
-				cookie.Value = ss.SessionId()
-				cookie.Path = "/"
-				cookie.MaxAge = int(tinyConfig.sessionexpire)
-				cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
-				cookie.HttpOnly = true
-				context.AddCookie(cookie)
-			}
-		}
-		if ok {
-			context.session = ss
-		}
-	}
-	if csrfProvider != nil {
-		//添加Csrf Session信息,csrf有效期与session相同
-		var cookieValue, err = context.Cookie(DefaultCSRFCookieName)
-		var ss session.Session
-		var ok bool = false
-		if err == nil {
-			ss, ok = csrfProvider.Session(cookieValue)
-		}
-		if !ok {
-			ss, ok = sessionProvider.CreateSession()
-			if ok {
-				var cookie = &http.Cookie{}
-				cookie.Name = DefaultCSRFCookieName
-				cookie.Value = ss.SessionId()
-				cookie.Path = "/"
-				cookie.MaxAge = int(tinyConfig.sessionexpire)
-				cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
-				cookie.HttpOnly = true
-				context.AddCookie(cookie)
-			}
-		}
-		if ok {
-			context.csrf = ss
-		}
-	}
+
 	// 检索路由信息
 	var result = RootRouter.Pass(&context)
 	if result {
 		//执行
+		if !context.static {
+			//只有非静态的上下文才能设置session和csrf
+			if sessionProvider != nil {
+				//添加Session信息
+				var cookieValue, err = context.Cookie(DefaultSessionCookieName)
+				var ss session.Session
+				var ok bool = false
+				if err == nil {
+					ss, ok = sessionProvider.Session(cookieValue)
+				}
+				if !ok {
+					ss, ok = sessionProvider.CreateSession()
+				}
+				if ok {
+					//更新cookie有效期
+					var cookie = &http.Cookie{}
+					cookie.Name = DefaultSessionCookieName
+					cookie.Value = ss.SessionId()
+					cookie.Path = "/"
+					cookie.MaxAge = int(tinyConfig.sessionexpire)
+					cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
+					cookie.HttpOnly = true
+					context.AddCookie(cookie)
+					context.session = ss
+				}
+			}
+			if csrfProvider != nil {
+				//添加Csrf Session信息,csrf有效期与session相同
+				var cookieValue, err = context.Cookie(DefaultCSRFCookieName)
+				var ss session.Session
+				var ok bool = false
+				if err == nil {
+					ss, ok = csrfProvider.Session(cookieValue)
+				}
+				if !ok {
+					ss, ok = csrfProvider.CreateSession()
+				}
+				if ok {
+					//更新cookie有效期
+					var cookie = &http.Cookie{}
+					cookie.Name = DefaultCSRFCookieName
+					cookie.Value = ss.SessionId()
+					cookie.Path = "/"
+					cookie.MaxAge = int(tinyConfig.sessionexpire)
+					cookie.Expires = time.Now().Add(time.Duration(cookie.MaxAge) * time.Second)
+					cookie.HttpOnly = true
+					context.AddCookie(cookie)
+					context.csrf = ss
+				}
+			}
+		}
 		context.execute()
 	} else {
 		//页面不存在
