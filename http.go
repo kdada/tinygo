@@ -77,8 +77,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 //  return:(是否查找到路由,是否是静态路由)
 func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 	var context = HttpContext{}
-	var url = filepath.Clean("/" + strings.Replace(r.URL.Path, `\`, `/`, -1))
-	context.urlParts = strings.Split(url, "/")
+	var url = filepath.ToSlash(filepath.Clean("/" + r.URL.Path))
+	context.urlParts = strings.Split(url, `/`)
 	var i = len(context.urlParts) - 1
 	for ; i > 0; i-- {
 		if context.urlParts[i] != "" {
