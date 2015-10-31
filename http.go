@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -77,8 +76,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 //  return:(是否查找到路由,是否是静态路由)
 func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 	var context = HttpContext{}
-	var url = filepath.ToSlash(filepath.Clean("/" + r.URL.Path))
-	context.urlParts = strings.Split(url, `/`)
+	context.urlParts = strings.Split(r.URL.Path, `/`)
 	var i = len(context.urlParts) - 1
 	for ; i > 0; i-- {
 		if context.urlParts[i] != "" {

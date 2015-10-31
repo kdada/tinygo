@@ -23,21 +23,37 @@ func (this *StaticRouter) Pass(context RouterContext) bool {
 	if strings.EqualFold(context.Method(), "GET") {
 		var parts = context.RouterParts()
 		var currentPath = ""
+		var malice = false
 		for index := this.Level() + 1; index < len(parts); index++ {
 			var param = parts[index]
+			if strings.Contains(param, `\`) {
+				//param不应该包含这种分隔符
+				malice = true
+				break
+			}
 			if param != "" && param != ".." {
 				currentPath = filepath.Join(currentPath, param)
 			}
 		}
-		currentPath = filepath.Join(this.path, currentPath)
-		var info, err = os.Stat(currentPath)
-		if err == nil && !info.IsDir() {
-			var sre = &StaticRouterExecutor{currentPath}
+		if malice {
+			//空文件路径
+			var sre = &StaticRouterExecutor{""}
 			context.AddRouter(this)
 			context.AddContextExecutor(sre)
 			//设置是静态路由
 			context.SetStatic(true)
 			return true
+		} else {
+			currentPath = filepath.Join(this.path, currentPath)
+			var info, err = os.Stat(currentPath)
+			if err == nil && !info.IsDir() {
+				var sre = &StaticRouterExecutor{currentPath}
+				context.AddRouter(this)
+				context.AddContextExecutor(sre)
+				//设置是静态路由
+				context.SetStatic(true)
+				return true
+			}
 		}
 	}
 	return false
@@ -49,5 +65,9 @@ type StaticRouterExecutor struct {
 }
 
 func (this *StaticRouterExecutor) Exec(context RouterContext) {
-	http.ServeFile(context.ResponseWriter(), context.Request(), this.path)
+	if this.path != "" {
+		http.ServeFile(context.ResponseWriter(), context.Request(), this.path)
+	} else {
+		http.NotFound(context.ResponseWriter(), context.Request())
+	}
 }
