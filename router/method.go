@@ -12,7 +12,7 @@ type MethodRouter struct {
 	instanceType reflect.Type   //结构体类型
 	methodType   reflect.Method //方法类型
 	httpMethod   string         //能处理的Http方法
-	extensions   []string       //路由扩展
+	extensions   []*RegSegment  //路由扩展
 }
 
 // Pass 传递指定的路由环境给当前的路由器
@@ -28,8 +28,16 @@ func (this *MethodRouter) Pass(context RouterContext) bool {
 			var routeData, ok = this.check(route)
 			if ok {
 				//将路由中多余的部分作为查询参数添加到http环境中
-				for index := this.Level() + 1; index < len(parts); index++ {
-					context.AddRouterParams(this.extensions[index], parts[index])
+				for index := 0; index < len(this.extensions); index++ {
+					var result, err = this.extensions[index].Parse(parts[this.Level()+index+1])
+					if err == nil {
+						for k, v := range result {
+							context.AddRouterParams(k, v)
+						}
+					} else {
+						//出现错误,路由解析失败
+						return false
+					}
 				}
 				//添加路由参数
 				for k, v := range routeData {

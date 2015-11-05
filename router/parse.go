@@ -38,13 +38,13 @@ func ParseReg(exp string) (*RegSegment, error) {
 	var lastSegStart = 0
 	for i, b := range bytes {
 		switch b {
-		case 123: //"{"
+		case 40: //"("
 			{
 				//截取普通字符串
 				rs.Exp += string(bytes[lastSegStart:i])
 				lastSegStart = i + 1
 			}
-		case 125: //"}"
+		case 41: //")"
 			{
 				//截取正则字符串
 				var reg = string(bytes[lastSegStart:i])
@@ -81,4 +81,17 @@ func ParseReg(exp string) (*RegSegment, error) {
 		return rs, nil
 	}
 	return nil, RouterErrorRegexpNoneError.Format(exp).Error()
+}
+
+func ParseRegs(exps []string) ([]*RegSegment, error) {
+	var results = make([]*RegSegment, len(exps))
+	for i, s := range exps {
+		var r, err = ParseReg(s)
+		if err == nil {
+			results[i] = r
+		} else {
+			return nil, err
+		}
+	}
+	return results, nil
 }

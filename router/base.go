@@ -17,12 +17,7 @@ type BaseRouter struct {
 
 // Init 初始化基础路由数据
 func (this *BaseRouter) Init(name string) {
-	var segment, err = ParseReg(name)
-	if err == nil {
-		this.segment = segment
-		this.reg = true
-	}
-	this.name = strings.ToLower(name)
+	this.setName(name)
 	this.children = make(map[string]Router, 0)
 	this.regchildren = make(map[string]Router, 0)
 	this.beforeFilters = make([]RouterFilter, 0)
@@ -32,6 +27,20 @@ func (this *BaseRouter) Init(name string) {
 // Name 返回当前路由的名称
 func (this *BaseRouter) Name() string {
 	return this.name
+}
+
+// setName 设置路由名称
+// 如果名称中包含(name=regex)形式的部分,则该名称会被解析为正则
+//  (id=\d+).html 解析为 ^\d+.html$
+func (this *BaseRouter) setName(name string) {
+	var segment, err = ParseReg(name)
+	if err == nil {
+		this.segment = segment
+		this.reg = true
+	} else {
+		this.reg = false
+	}
+	this.name = strings.ToLower(name)
 }
 
 // Super 返回当前路由的父路由
@@ -79,7 +88,7 @@ func (this *BaseRouter) check(route string) (map[string]string, bool) {
 		var m, err = this.segment.Parse(route)
 		return m, err == nil
 	} else {
-		return nil, strings.EqualFold(route, this.name)
+		return nil, strings.EqualFold(strings.ToLower(route), this.name)
 	}
 }
 
@@ -103,15 +112,36 @@ func (this *BaseRouter) AddChild(router Router) bool {
 		} else {
 			children = this.children
 		}
-		var _, ok = children[name]
+		var child, ok = children[name]
 		if !ok {
+			//如果不存在该名称的子路由
 			children[strings.ToLower(router.Name())] = router
 			router.SetSuper(this)
 			router.SetLevel(this.level + 1)
 			return true
+		} else {
+			//如果存在该名称的子路由
+			var routerChildren = router.childrenMap()
+			var routerMapChildren = router.childrenMap()
+			for _, v := range routerChildren {
+				child.AddChild(v)
+			}
+			for _, v := range routerMapChildren {
+				child.AddChild(v)
+			}
 		}
 	}
 	return false
+}
+
+// childrenMap 返回当前所有非正则子路由
+func (this *BaseRouter) childrenMap() map[string]Router {
+	return this.children
+}
+
+// regchildrenMap 返回当前所有正则子路由
+func (this *BaseRouter) regchildrenMap() map[string]Router {
+	return this.regchildren
 }
 
 // AddChildren 批量添加添加子路由,如果已经存在同名路由,则添加失败

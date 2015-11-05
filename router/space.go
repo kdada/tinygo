@@ -43,7 +43,7 @@ func (this *SpaceRouter) Pass(context RouterContext) bool {
 		if canExec {
 			//子路由段名称
 			var pathName = parts[this.level+1]
-			var childRouter, ok = this.children[pathName]
+			var childRouter, ok = this.children[strings.ToLower(pathName)]
 			if ok {
 				//直接传递
 				ok = childRouter.Pass(context)

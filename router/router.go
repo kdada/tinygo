@@ -41,6 +41,10 @@ type Router interface {
 	RemoveAfterFilter(filter RouterFilter) bool
 	// ExecAfterFilter 执行后置过滤器
 	ExecAfterFilter(context RouterContext) bool
+	// childrenMap 返回当前所有非正则子路由
+	childrenMap() map[string]Router
+	// regchildrenMap 返回当前所有正则子路由
+	regchildrenMap() map[string]Router
 }
 
 // 默认页面路由器接口

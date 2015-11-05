@@ -84,11 +84,12 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 		}
 	}
 	context.urlParts = context.urlParts[:i+1]
+	context.params = make(map[string]string)
 	context.request = r
 	context.responseWriter = w
 
 	// 检索路由信息
-	var result = RootRouter.Pass(&context)
+	var result = rootRouter.Pass(&context)
 	if result {
 		//执行
 		if !context.static {
@@ -142,6 +143,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 				}
 			}
 		}
+		context.ParseParams()
 		context.execute()
 	} else {
 		//页面不存在

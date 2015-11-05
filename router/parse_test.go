@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseReg(t *testing.T) {
-	var seg = "list{page}_{number=[0-9]+}"
+	var seg = "list(page)_(number=[0-9]+)"
 	var segment, err = ParseReg(seg)
 	if err != nil {
 		t.Fatal(err)

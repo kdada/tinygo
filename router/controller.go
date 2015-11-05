@@ -9,7 +9,9 @@ type internalController interface {
 
 // 控制器路由信息接口
 type ControllerRouter interface {
-	Info() (string, string, []string)
+	// 返回控制器路由信息
+	//  return:方法名,路由名称,http方法,后缀段
+	Info() (string, string, string, []string)
 }
 
 // 控制器接口
