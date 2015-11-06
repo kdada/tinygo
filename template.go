@@ -43,6 +43,7 @@ func compileView(filePath string) (*template.Template, error) {
 	}
 	var tmplName = filepath.Base(filePath)
 	var tmpl = template.New(tmplName)
+	//增加模版方法
 	tmpl.Funcs(new(CommonFunMap).FuncMap())
 	tmpl.Funcs(new(CsrfFuncMap).FuncMap())
 	var tmpls, err = tmpl.ParseFiles(pathSlice...)
@@ -90,8 +91,11 @@ func partialViewTemplate(filePath string) *template.Template {
 func ParseTemplate(context *HttpContext, path string, data interface{}) {
 	var tmpl = viewTemplate(path)
 	if tmpl != nil {
-		tmpl = tmpl.Funcs((&CsrfFuncMap{context}).FuncMap())
-		err := tmpl.Execute(context.responseWriter, data)
+		var newTmpl, err = tmpl.Clone()
+		if err == nil {
+			newTmpl = newTmpl.Funcs((&CsrfFuncMap{context}).FuncMap())
+			err = newTmpl.Execute(context.responseWriter, data)
+		}
 		if err != nil {
 			Error(err)
 			http.NotFound(context.responseWriter, context.request)
@@ -108,7 +112,7 @@ func ParseTemplate(context *HttpContext, path string, data interface{}) {
 func ParsePartialTemplate(context *HttpContext, path string, data interface{}) {
 	var tmpl = partialViewTemplate(path)
 	if tmpl != nil {
-		content := tmpl.Lookup("Content")
+		content := tmpl.Lookup(DefaultTemplateName)
 		if content != nil {
 			tmpl = content
 		}
