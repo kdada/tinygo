@@ -31,6 +31,9 @@ const DefaultCSRFCookieName = "__CSRFId"
 // 默认CSRF 表单名
 const DefaultCSRFTokenName = "csrf"
 
+// 默认最大文件表单占用内存大小
+const DefaultMaxMemory = 32 << 20 // 32 MB
+
 // Api格式类型
 type ApiType string
 

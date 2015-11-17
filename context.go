@@ -1,14 +1,56 @@
 package tinygo
 
 import (
+	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"os"
 	"strconv"
 	"time"
 
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
 )
+
+// 表单文件
+type FormFile struct {
+	file   multipart.File        //表单文件
+	header *multipart.FileHeader //文件头信息
+}
+
+// FileName 返回文件名
+func (this *FormFile) FileName() string {
+	return this.header.Filename
+}
+
+// Header 返回文件头信息
+func (this *FormFile) Header() textproto.MIMEHeader {
+	return this.header.Header
+}
+
+// File 返回表单文件
+func (this *FormFile) File() multipart.File {
+	return this.file
+}
+
+// Close 关闭表单文件
+func (this *FormFile) Close() {
+	this.file.Close()
+}
+
+// SaveTo 将文件保存到指定路径,保存完毕后自动关闭表单文件
+func (this *FormFile) SaveTo(path string) error {
+	var lf, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
+	if err == nil {
+		defer lf.Close()
+		_, err = io.Copy(lf, this.file)
+		if err == nil {
+			this.Close()
+		}
+	}
+	return err
+}
 
 // 路由环境
 type HttpContext struct {
@@ -103,7 +145,7 @@ func (this *HttpContext) AddCookie(cookie *http.Cookie) {
 func (this *HttpContext) ParseParams() error {
 	if !this.parsed {
 		this.parsed = true
-		var err = this.request.ParseForm()
+		var err = this.request.ParseMultipartForm(DefaultMaxMemory)
 		if err != nil {
 			return err
 		}
@@ -149,8 +191,12 @@ func (this *HttpContext) ParamFloat(key string) (float64, error) {
 }
 
 // ParamString 获取http参数文件
-func (this *HttpContext) ParamFile(key string) (multipart.File, *multipart.FileHeader, error) {
-	return this.request.FormFile(key)
+func (this *HttpContext) ParamFile(key string) (*FormFile, error) {
+	var file, header, err = this.request.FormFile(key)
+	if err == nil {
+		return &FormFile{file, header}, nil
+	}
+	return nil, err
 }
 
 // WriteString 将字符串写入http response流
