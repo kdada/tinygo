@@ -52,7 +52,7 @@ func (this *baseController) Json(value interface{}) {
 		Error(err)
 		this.HttpNotFound()
 	} else {
-		this.Context.responseWriter.Header().Set("Content-Type", "application/json")
+		this.Context.responseWriter.Header().Set("Content-Type", "application/json; charset=utf-8")
 		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
 			Error(err)
@@ -69,7 +69,7 @@ func (this *baseController) Xml(value interface{}) {
 		Error(err)
 		this.HttpNotFound()
 	} else {
-		this.Context.responseWriter.Header().Set("Content-Type", "application/xml")
+		this.Context.responseWriter.Header().Set("Content-Type", "application/xml; charset=utf-8")
 		_, err := this.Context.responseWriter.Write(bytes)
 		if err != nil {
 			Error(err)
