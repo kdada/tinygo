@@ -9,7 +9,7 @@ import (
 // NewRootRouter 创建根路由
 func NewRootRouter() Router {
 	var router = new(SpaceRouter)
-	router.Init("")
+	router.Init(router, "")
 	return router
 }
 
@@ -17,7 +17,7 @@ func NewRootRouter() Router {
 //  name:路由名称
 func NewSpaceRouter(name string) Router {
 	var router = new(SpaceRouter)
-	router.Init(name)
+	router.Init(router, name)
 	return router
 }
 
@@ -30,7 +30,7 @@ func NewSpaceRouter(name string) Router {
 // 即url static/css/index.css 映射为本地目录 content/static/css/index.css
 func NewStaticRouter(name, path string) Router {
 	var router = new(StaticRouter)
-	router.Init(name)
+	router.Init(router, name)
 	router.path = strings.TrimRight(path, "/")
 	return router
 }
@@ -54,7 +54,7 @@ func NewControllerRouter(instance Controller) Router {
 				var regs, err = ParseRegs(extensions)
 				if err == nil {
 					var methodRouter = new(MethodRouter)
-					methodRouter.Init(alias)
+					methodRouter.Init(methodRouter, alias)
 					methodRouter.httpMethod = method
 					methodRouter.extensions = regs
 					methodRouter.instanceType = instanceType
@@ -102,7 +102,7 @@ func NewComplexControllerRouter(path string, instance Controller, info []interfa
 					var regs, err = ParseRegs(extensions)
 					if err == nil {
 						var methodRouter = new(MethodRouter)
-						methodRouter.Init(alias)
+						methodRouter.Init(methodRouter, alias)
 						methodRouter.httpMethod = method
 						methodRouter.extensions = regs
 						methodRouter.instanceType = instanceType
@@ -135,7 +135,7 @@ func NewRestfulControllerRouter(instance RestfulController) Router {
 		var spaceName = instanceType.Name()
 		spaceName = strings.TrimSuffix(spaceName, "Controller")
 		var controllerRouter = new(RestfulRouter)
-		controllerRouter.Init(spaceName)
+		controllerRouter.Init(controllerRouter, spaceName)
 		controllerRouter.instanceType = instanceType
 		return controllerRouter
 	}
@@ -168,7 +168,7 @@ func NewFunctionRouter(path string, f func(RouterContext)) Router {
 	var spacesLen = len(spaces)
 	if spacesLen > 0 && f != nil {
 		var tail = new(FunctionRouter) //最后一级路由,即函数路由
-		tail.Init(spaces[spacesLen-1])
+		tail.Init(tail, spaces[spacesLen-1])
 		tail.function = f
 		var header Router = tail //一级路由
 		for i := spacesLen - 2; i >= 0; i-- {

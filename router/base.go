@@ -4,6 +4,7 @@ import "strings"
 
 //基础路由器数据
 type BaseRouter struct {
+	this          Router            //指向当前对象的指针
 	name          string            //当前路由名称
 	super         Router            //上级路由
 	level         int               //路由层级
@@ -16,8 +17,9 @@ type BaseRouter struct {
 }
 
 // Init 初始化基础路由数据
-func (this *BaseRouter) Init(name string) {
+func (this *BaseRouter) Init(t Router, name string) {
 	this.setName(name)
+	this.this = t
 	this.children = make(map[string]Router, 0)
 	this.regchildren = make(map[string]Router, 0)
 	this.beforeFilters = make([]RouterFilter, 0)
@@ -168,7 +170,7 @@ func (this *BaseRouter) AddBeforeFilter(filter RouterFilter) Router {
 	if filter != nil {
 		this.beforeFilters = append(this.beforeFilters, filter)
 	}
-	return this
+	return this.this
 }
 
 // RemoveBeforeFilter 移除前置过滤器
@@ -199,7 +201,7 @@ func (this *BaseRouter) AddAfterFilter(filter RouterFilter) Router {
 	if filter != nil {
 		this.afterFilters = append(this.afterFilters, filter)
 	}
-	return this
+	return this.this
 }
 
 // RemoveAfterFilter 移除后置过滤器
