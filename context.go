@@ -7,6 +7,7 @@ import (
 	"net/textproto"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/kdada/tinygo/router"
@@ -145,7 +146,13 @@ func (this *HttpContext) AddCookie(cookie *http.Cookie) {
 func (this *HttpContext) ParseParams() error {
 	if !this.parsed {
 		this.parsed = true
-		var err = this.request.ParseMultipartForm(DefaultMaxMemory)
+		var ct = this.request.Header.Get("Content-Type")
+		var err error
+		if strings.Contains(ct, "multipart/form-data") {
+			err = this.request.ParseMultipartForm(DefaultMaxMemory)
+		} else {
+			err = this.request.ParseForm()
+		}
 		if err != nil {
 			return err
 		}
