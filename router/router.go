@@ -30,13 +30,13 @@ type Router interface {
 	// RemoveChild 移除子路由
 	RemoveChild(name string) bool
 	// AddBeforeFilter 添加前置过滤器
-	AddBeforeFilter(filter RouterFilter) bool
+	AddBeforeFilter(filter RouterFilter) Router
 	// RemoveBeforeFilter 移除前置过滤器
 	RemoveBeforeFilter(filter RouterFilter) bool
 	// ExecBeforeFilter 执行前置过滤器
 	ExecBeforeFilter(context RouterContext) bool
 	// AddAfterFilter 添加后置过滤器
-	AddAfterFilter(fileter RouterFilter) bool
+	AddAfterFilter(fileter RouterFilter) Router
 	// RemoveAfterFilter 移除后置过滤器
 	RemoveAfterFilter(filter RouterFilter) bool
 	// ExecAfterFilter 执行后置过滤器

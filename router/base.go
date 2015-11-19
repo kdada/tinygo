@@ -164,12 +164,11 @@ func (this *BaseRouter) RemoveChild(name string) bool {
 }
 
 // AddBeforeFilter 添加前置过滤器
-func (this *BaseRouter) AddBeforeFilter(filter RouterFilter) bool {
+func (this *BaseRouter) AddBeforeFilter(filter RouterFilter) Router {
 	if filter != nil {
 		this.beforeFilters = append(this.beforeFilters, filter)
-		return true
 	}
-	return false
+	return this
 }
 
 // RemoveBeforeFilter 移除前置过滤器
@@ -196,12 +195,11 @@ func (this *BaseRouter) ExecBeforeFilter(context RouterContext) bool {
 }
 
 // AddAfterFilter 添加后置过滤器
-func (this *BaseRouter) AddAfterFilter(filter RouterFilter) bool {
+func (this *BaseRouter) AddAfterFilter(filter RouterFilter) Router {
 	if filter != nil {
 		this.afterFilters = append(this.afterFilters, filter)
-		return true
 	}
-	return false
+	return this
 }
 
 // RemoveAfterFilter 移除后置过滤器
