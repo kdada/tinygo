@@ -12,7 +12,7 @@ type Session interface {
 	// String 获取字符串
 	String(key string) (string, bool)
 	//  Int 获取整数值
-	Int(key string) (int64, bool)
+	Int(key string) (int, bool)
 	// Bool 获取bool值
 	Bool(key string) (bool, bool)
 	// Float 获取浮点值
@@ -22,7 +22,7 @@ type Session interface {
 	// SetString 设置字符串
 	SetString(key string, value string)
 	// SetInt 设置整数值
-	SetInt(key string, value int64)
+	SetInt(key string, value int)
 	// SetBool 设置bool值
 	SetBool(key string, value bool)
 	// SetFloat 设置浮点值

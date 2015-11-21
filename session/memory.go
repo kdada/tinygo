@@ -42,9 +42,9 @@ func (this *MemSession) String(key string) (string, bool) {
 }
 
 //  Int 获取整数值
-func (this *MemSession) Int(key string) (int64, bool) {
+func (this *MemSession) Int(key string) (int, bool) {
 	v, ok := this.data[key]
-	s, ok := v.(int64)
+	s, ok := v.(int)
 	this.SetDeadline(this.provider.defaultExpire)
 	return s, ok
 }
@@ -78,7 +78,7 @@ func (this *MemSession) SetString(key string, value string) {
 }
 
 // SetInt 设置整数值
-func (this *MemSession) SetInt(key string, value int64) {
+func (this *MemSession) SetInt(key string, value int) {
 	this.data[key] = value
 	this.SetDeadline(this.provider.defaultExpire)
 }

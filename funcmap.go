@@ -11,6 +11,16 @@ type UserFuncMap interface {
 
 // 公共模版方法
 //  until(num int) []int:生成一个从0到num的数组
+//  addi(num ...int) int:整数加法
+//  addf(num ...float64) float64:浮点数加法
+//  muli(num ...int) int:整数乘法
+//  mulf(num ...float64) float64:浮点数乘法
+//  tocss(s string) template.CSS:转换字符串为CSS
+//  tohtml(s string) template.HTML:转换字符串为HTML
+//  toattr(s string) template.HTMLAttr:转换字符串为HTMLAttr
+//  tojs(s string) template.JS:转换字符串为JS
+//  tojsstr(s string) template.JSStr:转换字符串为JSStr
+//  tourl(s string) template.URL:转换字符串为URL
 type CommonFunMap struct {
 }
 
@@ -22,6 +32,52 @@ func (this *CommonFunMap) FuncMap() template.FuncMap {
 				result[i] = i
 			}
 			return result
+		},
+		"addi": func(nums ...int) int {
+			var result = 0
+			for _, v := range nums {
+				result += v
+			}
+			return result
+		},
+		"addf": func(nums ...float64) float64 {
+			var result = 0.0
+			for _, v := range nums {
+				result += v
+			}
+			return result
+		},
+		"muli": func(nums ...int) int {
+			var result = 0
+			for _, v := range nums {
+				result *= v
+			}
+			return result
+		},
+		"mulf": func(nums ...float64) float64 {
+			var result = 0.0
+			for _, v := range nums {
+				result *= v
+			}
+			return result
+		},
+		"tocss": func(s string) template.CSS {
+			return template.CSS(s)
+		},
+		"tohtml": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"toattr": func(s string) template.HTMLAttr {
+			return template.HTMLAttr(s)
+		},
+		"tojs": func(s string) template.JS {
+			return template.JS(s)
+		},
+		"tojsstr": func(s string) template.JSStr {
+			return template.JSStr(s)
+		},
+		"tourl": func(s string) template.URL {
+			return template.URL(s)
 		},
 	}
 }

@@ -86,7 +86,7 @@ func (this *HttpContext) Request() *http.Request {
 func (this *HttpContext) CsrfToken() string {
 	if this.csrf != nil {
 		var newToken = session.Guid()
-		this.csrf.SetInt(newToken, time.Now().Unix())
+		this.csrf.SetInt(newToken, int(time.Now().Unix()))
 		return newToken
 	}
 	return ""
@@ -100,7 +100,7 @@ func (this *HttpContext) ValidateCsrfToken() bool {
 			var t, ok = this.csrf.Int(token)
 			if ok {
 				this.csrf.Delete(token)
-				return time.Now().Unix()-t <= tinyConfig.csrfexpire
+				return time.Now().Unix()-int64(t) <= tinyConfig.csrfexpire
 			}
 		}
 	}
@@ -184,9 +184,10 @@ func (this *HttpContext) ParamBool(key string) (bool, error) {
 }
 
 // ParamString 获取http参数字符串
-func (this *HttpContext) ParamInt(key string) (int64, error) {
+func (this *HttpContext) ParamInt(key string) (int, error) {
 	var result = this.request.FormValue(key)
-	return strconv.ParseInt(result, 10, 64)
+	var v, err = strconv.ParseInt(result, 10, 64)
+	return int(v), err
 
 }
 
