@@ -2,6 +2,7 @@ package tinygo
 
 import (
 	"html/template"
+	"time"
 )
 
 // 模版方法映射接口
@@ -21,6 +22,8 @@ type UserFuncMap interface {
 //  tojs(s string) template.JS:转换字符串为JS
 //  tojsstr(s string) template.JSStr:转换字符串为JSStr
 //  tourl(s string) template.URL:转换字符串为URL
+//  time(t time.Time) string:返回时间字符串2006-01-02 15:04:05
+//  date(t time.Time) string:返回日期字符串2006-01-02
 type CommonFunMap struct {
 }
 
@@ -78,6 +81,12 @@ func (this *CommonFunMap) FuncMap() template.FuncMap {
 		},
 		"tourl": func(s string) template.URL {
 			return template.URL(s)
+		},
+		"time": func(t time.Time) string {
+			return t.Format("2006-01-02 15:04:05")
+		},
+		"date": func(t time.Time) string {
+			return t.Format("2006-01-02")
 		},
 	}
 }
