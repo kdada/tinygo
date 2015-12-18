@@ -12,10 +12,13 @@ import (
 
 // guid 生成全局唯一标志
 func Guid() string {
-	var iface, err = net.InterfaceByIndex(0)
-	var macAddr = ""
-	if err == nil {
-		macAddr = iface.HardwareAddr.String()
+	var hws, _ = net.Interfaces()
+	var macAddr = "6a:64:77:6c:6b:6a"
+	for _, h := range hws {
+		if !strings.HasPrefix(h.HardwareAddr.String(), "00:00:00:00:00:00") {
+			macAddr = h.HardwareAddr.String()
+			break
+		}
 	}
 	var x = new(byte)
 	var seed = time.Now().UnixNano()
