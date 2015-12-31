@@ -116,6 +116,7 @@ func ParsePartialTemplate(context *HttpContext, path string, data interface{}) {
 		if content != nil {
 			tmpl = content
 		}
+		tmpl = tmpl.Funcs((&CsrfFuncMap{context}).FuncMap())
 		err := tmpl.Execute(context.responseWriter, data)
 		if err != nil {
 			Error(err)
