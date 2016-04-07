@@ -154,9 +154,14 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 
 // HttpNotFound 返回页面不存在(404)错误
 func HttpNotFound(w http.ResponseWriter, r *http.Request) {
+	HttpNotFoundWithData(w, r, nil)
+}
+
+// HttpNotFound 返回页面不存在(404)错误,允许传入数据
+func HttpNotFoundWithData(w http.ResponseWriter, r *http.Request, d ViewData) {
 	if tinyConfig.pageerr != "" {
 		w.WriteHeader(404)
-		ParseTemplate(&HttpContext{responseWriter: w, request: r}, tinyConfig.pageerr, nil)
+		ParseTemplate(&HttpContext{responseWriter: w, request: r}, tinyConfig.pageerr, d)
 	} else {
 		http.NotFound(w, r)
 	}

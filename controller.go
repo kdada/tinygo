@@ -151,9 +151,9 @@ func (this *baseController) PartialView(path string, data ...interface{}) {
 
 }
 
-// HttpNotFound 返回404
+// HttpNotFound 返回404,如果指定了404页面,则会将当前Data传递给指定404页面
 func (this *baseController) HttpNotFound() {
-	HttpNotFound(this.Context.responseWriter, this.Context.request)
+	HttpNotFoundWithData(this.Context.responseWriter, this.Context.request, this.Data)
 }
 
 // ParseParams 将参数解析到结构体中
