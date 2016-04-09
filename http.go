@@ -96,7 +96,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 			//只有非静态的上下文才能设置session和csrf
 			if sessionProvider != nil {
 				//添加Session信息
-				var cookieValue, err = context.Cookie(DefaultSessionCookieName)
+				var cookieValue, err = context.Cookie(tinyConfig.sessionName)
 				var ss session.Session
 				var ok bool = false
 				if err == nil {
@@ -120,7 +120,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 			}
 			if csrfProvider != nil {
 				//添加Csrf Session信息,csrf有效期与session相同
-				var cookieValue, err = context.Cookie(DefaultCSRFCookieName)
+				var cookieValue, err = context.Cookie(tinyConfig.csrfName)
 				var ss session.Session
 				var ok bool = false
 				if err == nil {

@@ -43,13 +43,15 @@ layout.json为视图布局配置文件
 (4) controllers为控制器文件目录,文件名为(去掉Controller的部分),一个控制器一个文件  
 (5) models为模型(Model)目录  
 (6) routers目录[非必须]为路由目录,控制器路由可以在routers.go中进行注册  
-(7) services目录[非必须]为服务目录,网络服务方法,数据库服务方法等可以放在该目录中
+(7) services目录[非必须]为服务目录,网络服务方法,数据库服务方法等可以放在该目录中  
 
 
 
 web.cfg 配置文件范例如下
 ```ini
 #tinygo配置文件
+#app名称
+app = appname
 
 #启动模式,可以为debug或release
 mode = debug
@@ -69,7 +71,7 @@ port = 80
 #首页
 home = /home/index
 
-#是否启用session
+#是否启用session,如果不需要则建议设置为false
 session = true
 
 #session类型,参考tinygo/session,默认为memory
@@ -79,7 +81,7 @@ sessiontype = memory
 #由于csrf也使用了session provider,因此该值对csrf的session也有效
 sessionexpire = 1800
 
-#是否启用csrf
+#是否启用csrf,如果不需要则建议设置为false
 csrf = true
 
 #csrf的token过期时间,单位为秒
@@ -103,9 +105,9 @@ precompile = false
 api = json
 ```
 在该配置文件中可以更改相应的目录名称和其他http设置  
-在产品环境下,mode应该设置为release,precompile应该设置为true
+在产品环境下,mode应该设置为release,precompile应该设置为true  
 
-layout.json 布局配置文件范例如下
+layout.json 布局配置文件范例如下  
 ```json
 {
 	"LayoutMap":{
@@ -124,7 +126,7 @@ layout.json 布局配置文件范例如下
 (2) LayoutSpec定义了视图文件或目录下的所有视图文件使用相应的布局文件  
 直接定义的视图文件到布局的映射优先级高于目录到布局的映射  
 (3) DefaultLayout定义了LayoutSpec没有定义的视图文件使用的默认布局  
-  
+(4) 使用该配置文件可以实现多重布局  
   
   
   

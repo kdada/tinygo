@@ -21,6 +21,7 @@ func NormalizePath(path string) string {
 
 // 基本配置
 var tinyConfig = struct {
+	app           string   //应用名称
 	path          string   //当前程序启动目录(无需从文件读取)
 	mode          string   //启动模式,可以为debug或release
 	https         bool     //是否启用https,可选,默认为false
@@ -38,6 +39,9 @@ var tinyConfig = struct {
 	pageerr       string   //默认错误页面路径,默认为空
 	precompile    bool     //是否预编译页面路径,默认为false
 	api           string   //使用Api返回的数据的解析格式,默认为auto
+	//自动设置项
+	sessionName string //session对应的Cookie名称 app+DefaultSessionCookieName
+	csrfName    string //csrf对应的Cookie名称 app+DefaultCSRFCookieName
 }{}
 
 // loadConfig 加载配置
@@ -53,6 +57,15 @@ func loadConfig(envPath string) error {
 		//读取配置文件
 		var global = cfg.GlobalSection()
 		var err error
+		//app
+		tinyConfig.app, err = global.String("app")
+		if err != nil {
+			tinyConfig.app = "app"
+		}
+		//设置name
+		tinyConfig.sessionName = tinyConfig.app + DefaultSessionCookieName
+		tinyConfig.csrfName = tinyConfig.app + DefaultCSRFCookieName
+
 		//mode
 		tinyConfig.mode, err = global.String("mode")
 		if err != nil {
@@ -181,9 +194,11 @@ var layoutConfig = struct {
 func loadLayoutConfig() error {
 	var configPath = getViewFilePath(DefaultLayoutConfigFileName)
 	var content, err = ioutil.ReadFile(configPath)
-	if err == nil {
-		err = json.Unmarshal(content, &layoutConfig)
+	if err != nil {
+		Log("Tinygo use default layout config")
+		content = []byte(`{"LayoutMap":{},"DefaultLayout":"","LayoutSpec":{}}`)
 	}
+	err = json.Unmarshal(content, &layoutConfig)
 	if err != nil {
 		return err
 	} else {
