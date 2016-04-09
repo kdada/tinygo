@@ -108,7 +108,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 				if ok {
 					//更新cookie有效期
 					var cookie = &http.Cookie{}
-					cookie.Name = DefaultSessionCookieName
+					cookie.Name = tinyConfig.sessionName
 					cookie.Value = ss.SessionId()
 					cookie.Path = "/"
 					cookie.MaxAge = int(tinyConfig.sessionexpire)
@@ -132,7 +132,7 @@ func dispatch(w http.ResponseWriter, r *http.Request) (bool, bool) {
 				if ok {
 					//更新cookie有效期
 					var cookie = &http.Cookie{}
-					cookie.Name = DefaultCSRFCookieName
+					cookie.Name = tinyConfig.csrfName
 					cookie.Value = ss.SessionId()
 					cookie.Path = "/"
 					cookie.MaxAge = int(tinyConfig.sessionexpire)
