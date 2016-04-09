@@ -12,6 +12,11 @@ func iniConfigPaser(data []byte) (Config, error) {
 	var config = newIniConfig()
 	var currentSection = config.GlobalSection().(*IniSection)
 	var dataLength = len(data)
+	if dataLength >= 3 && data[0] == 239 && data[1] == 187 && data[2] == 191 {
+		//去除BOM头
+		data = data[3:]
+		dataLength -= 3
+	}
 	for i := 0; i < dataLength; i++ {
 		var char = string(data[i])
 		//忽略空白字符

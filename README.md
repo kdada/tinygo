@@ -47,7 +47,7 @@ layout.json为视图布局配置文件
 
 
 
-web.cfg 配置文件范例如下
+web.cfg 配置文件范例如下(UTF-8格式)
 ```ini
 #tinygo配置文件
 #app名称
@@ -107,7 +107,7 @@ api = json
 在该配置文件中可以更改相应的目录名称和其他http设置  
 在产品环境下,mode应该设置为release,precompile应该设置为true  
 
-layout.json 布局配置文件范例如下  
+layout.json 布局配置文件范例如下(UTF-8格式)  
 ```json
 {
 	"LayoutMap":{

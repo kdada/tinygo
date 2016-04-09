@@ -3,7 +3,7 @@ package config
 import "testing"
 
 func TestIniConfig(t *testing.T) {
-	var config, err = NewConfig(ConfigTypeIni, "test.cfg")
+	var config, err = NewConfig(ConfigTypeIni, "test_bom.cfg")
 	if err != nil {
 		t.Error(err)
 		return
