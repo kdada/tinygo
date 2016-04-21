@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-var iniRegErr = registerConfigParser(ConfigTypeIni, iniConfigPaser)
-
 // iniConfigPaser ini类型文件配置解析
 func iniConfigPaser(data []byte) (Config, error) {
 	var config = newIniConfig()
@@ -48,7 +46,7 @@ func iniConfigPaser(data []byte) (Config, error) {
 					}
 					if string(data[j]) == "\n" || j == dataLength-1 {
 						if !found {
-							return nil, ConfigErrorNotMatch.Format("]").Error()
+							return nil, ErrorNotMatch.Format("]").Error()
 						}
 						i = j
 						break
@@ -77,7 +75,7 @@ func iniConfigPaser(data []byte) (Config, error) {
 							value = strings.TrimSpace(value)
 							currentSection.add(key, value)
 						} else {
-							return nil, ConfigErrorNotMatch.Format("=").Error()
+							return nil, ErrorNotMatch.Format("=").Error()
 						}
 						i = j
 						break
@@ -145,7 +143,7 @@ func (this *IniSection) String(key string) (string, error) {
 	if ok {
 		return value, nil
 	}
-	return "", ConfigErrorInvalidKey.Format(key).Error()
+	return "", ErrorInvalidKey.Format(key).Error()
 }
 
 // Int 获取整数
@@ -156,9 +154,9 @@ func (this *IniSection) Int(key string) (int64, error) {
 		if err == nil {
 			return result, nil
 		}
-		return 0, ConfigErrorInvalidTypeConvertion.Format(value, "int64").Error()
+		return 0, ErrorInvalidTypeConvertion.Format(value, "int64").Error()
 	}
-	return 0, ConfigErrorInvalidKey.Format(key).Error()
+	return 0, ErrorInvalidKey.Format(key).Error()
 }
 
 // Bool 获取布尔值
@@ -169,9 +167,9 @@ func (this *IniSection) Bool(key string) (bool, error) {
 		if err == nil {
 			return result, nil
 		}
-		return false, ConfigErrorInvalidTypeConvertion.Format(value, "bool").Error()
+		return false, ErrorInvalidTypeConvertion.Format(value, "bool").Error()
 	}
-	return false, ConfigErrorInvalidKey.Format(key).Error()
+	return false, ErrorInvalidKey.Format(key).Error()
 }
 
 // Float 获取浮点值
@@ -182,7 +180,7 @@ func (this *IniSection) Float(key string) (float64, error) {
 		if err == nil {
 			return result, nil
 		}
-		return 0.0, ConfigErrorInvalidTypeConvertion.Format(value, "float64").Error()
+		return 0.0, ErrorInvalidTypeConvertion.Format(value, "float64").Error()
 	}
-	return 0.0, ConfigErrorInvalidKey.Format(key).Error()
+	return 0.0, ErrorInvalidKey.Format(key).Error()
 }

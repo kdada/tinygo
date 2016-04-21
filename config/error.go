@@ -5,24 +5,30 @@ import (
 	"fmt"
 )
 
-// 配置错误信息
-type ConfigError string
-
-// 错误码
-const (
-	ConfigErrorInvalidKey            ConfigError = "C10010:ConfigErrorInvalidKey,无效的key(%s)"
-	ConfigErrorInvalidTypeConvertion ConfigError = "C10020:ConfigErrorInvalidTypeConvertion,无效的类型转换,string(%s)转换为%s"
-	ConfigErrorInvalidConfigKind     ConfigError = "C10030:ConfigErrorInvalidConfigKind,无效的配置类型(%s)"
-	ConfigErrorReadError             ConfigError = "C10040:ConfigErrorReadError,无法读取配置文件(%s)"
-	ConfigErrorNotMatch              ConfigError = "C10050:ConfigErrorNotMatch,未找到匹配的字符(%s)"
-)
+// 错误信息
+type Error string
 
 // Format 格式化错误信息并生成新的错误信息
-func (this ConfigError) Format(data ...interface{}) ConfigError {
-	return ConfigError(fmt.Sprintf(string(this), data...))
+func (this Error) Format(data ...interface{}) Error {
+	return Error(fmt.Sprintf(string(this), data...))
 }
 
 // Error 生成error类型
-func (this ConfigError) Error() error {
+func (this Error) Error() error {
 	return errors.New(string(this))
 }
+
+// String 返回错误字符串描述
+func (this Error) String() string {
+	return string(this)
+}
+
+// 错误码
+const (
+	ErrorInvalidConfigParser   Error = "ErrorInvalidConfigParser(C10000):无效的配置解析器"
+	ErrorInvalidKey            Error = "ErrorInvalidKey(C10010):无效的key(%s)"
+	ErrorInvalidTypeConvertion Error = "ErrorInvalidTypeConvertion(C10020):无效的类型转换,string(%s)转换为%s"
+	ErrorInvalidConfigKind     Error = "ErrorInvalidConfigKind(C10030):无效的配置类型(%s)"
+	ErrorReadError             Error = "ErrorReadError(C10040):无法读取配置文件(%s)"
+	ErrorNotMatch              Error = "ErrorNotMatch(C10050):未找到匹配的字符(%s)"
+)

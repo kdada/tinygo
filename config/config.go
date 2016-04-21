@@ -1,4 +1,4 @@
-// Package config 实现了一个ini配置文件解析器
+// Package config 包含解析配置文件相关工具
 package config
 
 import (
@@ -32,28 +32,36 @@ type Section interface {
 type ConfigParser func([]byte) (Config, error)
 
 var (
-	parsersMu sync.Mutex                          //生成器互斥锁
-	parsers   = make(map[ConfigType]ConfigParser) //配置解析器
+	parsersMu sync.Mutex                      //互斥锁
+	parsers   = make(map[string]ConfigParser) //配置解析器
 )
 
 // NewConfig 创建一个新的Config
 //  path:配置文件路径
-func NewConfig(kind ConfigType, path string) (Config, error) {
+func NewConfig(kind string, path string) (Config, error) {
 	var data, err = ioutil.ReadFile(path)
 	if err != nil {
-		return nil, ConfigErrorReadError.Format(path).Error()
+		return nil, ErrorReadError.Format(path).Error()
 	}
-	var parser, ok = parsers[kind]
-	if !ok {
-		return nil, ConfigErrorInvalidConfigKind.Format(kind).Error()
-	}
-	return parser(data)
+	return NewConfigWithContent(kind, data)
 }
 
-// registerProviderCreator 注册InjectorProvider创建器
-func registerConfigParser(kind ConfigType, parser ConfigParser) error {
+// NewConfigWithContent 创建一个新的Config
+//  content:配置文件内容
+func NewConfigWithContent(kind string, content []byte) (Config, error) {
+	var parser, ok = parsers[kind]
+	if !ok {
+		return nil, ErrorInvalidConfigKind.Format(kind).Error()
+	}
+	return parser(content)
+}
+
+// Register 注册ConfigParser
+func Register(kind string, parser ConfigParser) {
+	if parser == nil {
+		panic(ErrorInvalidConfigParser)
+	}
 	parsersMu.Lock()
 	defer parsersMu.Unlock()
 	parsers[kind] = parser
-	return nil
 }

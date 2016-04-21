@@ -3,11 +3,13 @@ package session
 import (
 	"sync"
 	"time"
+
+	"github.com/kdada/tinygo/util"
 )
 
 // 内存Session,每次操作都会使Session有效时间延长
 type MemSession struct {
-	provider  *MemSessionProvider    //会话提供器
+	provider  *MemSessionContainer   //会话提供器
 	sessionId string                 //会话id
 	data      map[string]interface{} //数据
 	deadline  int64                  //死亡时间(秒),从1970年开始
@@ -117,27 +119,66 @@ func (this *MemSession) Dead() bool {
 	return time.Now().Unix() > this.deadline
 }
 
-// 内存Session提供器
-type MemSessionProvider struct {
+// 内存Session容器
+type MemSessionContainer struct {
 	sessionCounter int                    //session计数器
 	sessions       map[string]*MemSession //存储Session
 	defaultExpire  int64                  //默认过期时间
 	rwm            sync.RWMutex           //读写锁
+	closed         bool                   //是否关闭
 }
 
-// newMemSessionProvider 创建Session提供器
-func newMemSessionProvider(expire int64) (SessionProvider, error) {
-	var provider = new(MemSessionProvider)
-	provider.sessions = make(map[string]*MemSession, 100)
-	provider.defaultExpire = expire
-	return provider, nil
+// newMemSessionContainer 创建Session提供器
+func newMemSessionContainer(expire int64) (SessionContainer, error) {
+	var container = new(MemSessionContainer)
+	container.sessions = make(map[string]*MemSession, 100)
+	container.defaultExpire = expire
+	container.closed = false
+	go func() {
+		//Clean [60,expire/2]
+		//每分钟检查一次,达到指定时间时清理一次Session并计算下一次清理的时间
+		var minCleanSep = time.Duration(60) * time.Second
+		var maxCleanSep = time.Duration(expire/2) * time.Second
+		if maxCleanSep < minCleanSep {
+			maxCleanSep = minCleanSep
+		}
+		var rangeCleanSep = float32(maxCleanSep - minCleanSep)
+		var cleanSep = minCleanSep
+		var passTime = time.Duration(0)
+		for !container.closed {
+			time.Sleep(minCleanSep)
+			passTime += minCleanSep
+			if !container.closed && passTime >= cleanSep {
+				var dead = container.Clean()
+				//计算下一次Clean的时间间隔
+				passTime = 0
+				var alive = len(container.sessions)
+				var total = float32(dead + alive)
+				if total <= 0 {
+					total = 1.0
+				}
+				var deadRate = float32(dead) / total
+				if deadRate >= 0.2 {
+					//本次清理超过20%
+					cleanSep = minCleanSep
+				} else {
+					deadRate *= 5
+					cleanSep = minCleanSep + time.Duration(rangeCleanSep*deadRate)
+				}
+			}
+		}
+	}()
+	return container, nil
 }
 
 // CreateSession 创建Session
-func (this *MemSessionProvider) CreateSession() (Session, bool) {
+func (this *MemSessionContainer) CreateSession() (Session, bool) {
+	if this.closed {
+		return nil, false
+	}
 	this.rwm.Lock()
 	defer this.rwm.Unlock()
-	var sessionId = Guid()
+	var sessionId = util.NewUUID().Hex()
 	var ss = newMemSession(sessionId)
 	ss.provider = this
 	ss.SetDeadline(this.defaultExpire)
@@ -147,7 +188,10 @@ func (this *MemSessionProvider) CreateSession() (Session, bool) {
 }
 
 // Session 获取Session
-func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
+func (this *MemSessionContainer) Session(sessionId string) (Session, bool) {
+	if this.closed {
+		return nil, false
+	}
 	this.rwm.RLock()
 	defer this.rwm.RUnlock()
 	var ss, ok = this.sessions[sessionId]
@@ -158,13 +202,29 @@ func (this *MemSessionProvider) Session(sessionId string) (Session, bool) {
 	return ss, ok
 }
 
-// Clean 清理过期Session
-func (this *MemSessionProvider) Clean() {
+// Clean 清理过期Session 并返回清理的数量
+func (this *MemSessionContainer) Clean() int {
+	if this.closed {
+		return 0
+	}
 	this.rwm.Lock()
 	defer this.rwm.Unlock()
+	var count = 0
 	for k, v := range this.sessions {
 		if v.Dead() {
+			count++
 			delete(this.sessions, k)
 		}
 	}
+	return count
+}
+
+// Close 关闭SessionProvider,关闭之后将无法使用
+func (this *MemSessionContainer) Close() {
+	this.closed = true
+}
+
+// Closed 确认当前SessionProvider是否已经关闭
+func (this *MemSessionContainer) Closed() bool {
+	return this.closed
 }

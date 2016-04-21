@@ -1,4 +1,4 @@
-package session
+package util
 
 import (
 	"errors"
@@ -25,6 +25,5 @@ func (this Error) String() string {
 
 // 错误码
 const (
-	ErrorInvalidSessionProvider Error = "ErrorInvalidSessionProvider(S10000):无效的Session提供器"
-	ErrorInvalidSessionKind     Error = "ErrorInvalidSessionKind(S10010):无效的Session类型(%s)"
+	ErrorMacAddrNotFound Error = "ErrorMacAddrNotFound(U10000):无法获取到MAC地址"
 )

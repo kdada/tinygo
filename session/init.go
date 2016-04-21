@@ -1,6 +1,6 @@
 package session
 
 func init() {
-	//注册内存会话提供器
-	RegisterSessionProviderCreator(SessionTypeMemory, newMemSessionProvider)
+	//注册 内存SessionContainer创建器
+	Register("memory", newMemSessionContainer)
 }

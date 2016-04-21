@@ -37,36 +37,41 @@ type Session interface {
 	Dead() bool
 }
 
-// Session提供器
-type SessionProvider interface {
+// Session容器
+type SessionContainer interface {
 	// CreateSession 创建Session
 	CreateSession() (Session, bool)
 	// Session 获取Session
 	Session(sessionId string) (Session, bool)
-	// Clean 清理过期Session
-	Clean()
+	// Close 关闭SessionProvider,关闭之后将无法使用
+	Close()
+	// Closed 确认当前SessionProvider是否已经关闭
+	Closed() bool
 }
 
-// SessionProvider创建器
-type SessionProviderCreator func(expire int64) (SessionProvider, error)
+// SessionContainer创建器
+type SessionContainerCreator func(expire int64) (SessionContainer, error)
 
 var (
-	mu       sync.Mutex                                     //生成器互斥锁
-	creators = make(map[SessionType]SessionProviderCreator) //配置解析器
+	mu       sync.Mutex                                 //互斥锁
+	creators = make(map[string]SessionContainerCreator) //SessionContainer创建器映射
 )
 
-// NewConfig 创建一个新的Config
-//  path:配置文件路径
-func NewSessionProvider(kind SessionType, expire int64) (SessionProvider, error) {
+// NewSessionContainer 创建一个新的Session容器
+//  expire:最大过期时间(秒)
+func NewSessionContainer(kind string, expire int64) (SessionContainer, error) {
 	var creator, ok = creators[kind]
 	if !ok {
-		return nil, SessionErrorInvalidSessionKind.Format(kind).Error()
+		return nil, ErrorInvalidSessionKind.Format(kind).Error()
 	}
 	return creator(expire)
 }
 
-// RegisterSessionProviderCreator 注册SessionProvider创建器
-func RegisterSessionProviderCreator(kind SessionType, creator SessionProviderCreator) error {
+// Register 注册SessionContainer创建器
+func Register(kind string, creator SessionContainerCreator) error {
+	if creator == nil {
+		panic(ErrorInvalidSessionProvider)
+	}
 	mu.Lock()
 	defer mu.Unlock()
 	creators[kind] = creator
