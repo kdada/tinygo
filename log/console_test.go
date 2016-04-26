@@ -11,12 +11,12 @@ var consoleLogger Logger
 
 func TestMain(m *testing.M) {
 	var err error
-	consoleLogger, err = NewLogger("console")
+	consoleLogger, err = NewLogger("console", nil)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fileLogger, err = NewLogger("file")
+	fileLogger, err = NewLogger("file", "logs")
 	fileLogger.SetAsync(true)
 	if err != nil {
 		fmt.Println(err)

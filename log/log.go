@@ -29,7 +29,9 @@ type Logger interface {
 	Cloesd() bool
 }
 
-type LoggerCreator func() (Logger, error)
+// 日志创建器
+//  param: 日志参数
+type LoggerCreator func(param interface{}) (Logger, error)
 
 var (
 	mu       sync.Mutex                       //互斥锁
@@ -38,12 +40,12 @@ var (
 
 // NewLogger 创建一个新的Logger
 //  kind:日志类型
-func NewLogger(kind string) (Logger, error) {
+func NewLogger(kind string, param interface{}) (Logger, error) {
 	var creator, ok = creators[kind]
 	if !ok {
 		return nil, ErrorInvalidKind.Format(kind).Error()
 	}
-	return creator()
+	return creator(param)
 }
 
 // Register 注册LoggerCreator创建器

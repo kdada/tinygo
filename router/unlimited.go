@@ -4,11 +4,18 @@ package router
 type UnlimitedRouter struct {
 	parent            Router                 //父路由
 	name              string                 //当前路由名称
-	namedChildren     map[string]Router      //名称子路由
-	unnamedChildren   map[string]Router      //非名称子路由
 	preFilters        []PreFilter            //在子路由处理之前执行的过滤器
 	postFilters       []PostFilter           //在子路由处理之后执行的过滤器
 	executorGenerator RouterExcutorGenerator //路由执行器生成器
+}
+
+// NewUnlimitedRouter 创建无限路由
+func NewUnlimitedRouter(name string, match interface{}) (Router, error) {
+	var r = new(UnlimitedRouter)
+	r.name = name
+	r.preFilters = make([]PreFilter, 0)
+	r.postFilters = make([]PostFilter, 0)
+	return r, nil
 }
 
 // Name 返回当前路由名称
@@ -26,10 +33,10 @@ func (this *UnlimitedRouter) SetParent(router Router) error {
 	var r, ok = router.Child(this.name)
 	var x, ok2 = r.(*UnlimitedRouter)
 	if ok && ok2 && x == this {
-		if this.parent != nil {
+		if this.parent != nil && this.parent != router {
 			this.parent.RemoveChild(this.name)
 		}
-		this.parent = r
+		this.parent = router
 		return nil
 	}
 	return ErrorInvalidParentRouter.Error()
@@ -53,6 +60,11 @@ func (this *UnlimitedRouter) AddChildren(routers []Router) {
 // Child 无限路由没有子路由
 func (this *UnlimitedRouter) Child(name string) (Router, bool) {
 	return nil, false
+}
+
+// Children 无限路由没有子路由
+func (this *UnlimitedRouter) Children() []Router {
+	return []Router{}
 }
 
 // RemoveChild 无限路由没有子路由
@@ -134,6 +146,5 @@ func (this *UnlimitedRouter) Match(context RouterContext) (RouterExcutor, bool) 
 		return executor, true
 	}
 	//匹配失败
-	context.Terminate()
 	return nil, false
 }

@@ -1,5 +1,7 @@
 package router
 
+import "sync"
+
 type Router interface {
 	// Name 返回当前路由名称
 	Name() string
@@ -7,14 +9,16 @@ type Router interface {
 	Parent() Router
 	// SetParent 设置当前路由父路由,当前路由必须是父路由的子路由
 	SetParent(router Router) error
-	// Named 返回当前是否使用Name进行路由匹配
+	// Named 返回当前路由是否为名称路由(指定字符串与路由段字符串相等则匹配)
 	Named() bool
-	// AddChild 添加子路由,Name不能重复,否则后者的会覆盖前者
+	// AddChild 添加子路由,Name相同的路由自动合并
 	AddChild(router Router)
-	// AddChildren 批量添加子路由,Name不能重复,否则后者的会覆盖前者
+	// AddChildren 批量添加子路由,Name相同的路由自动合并
 	AddChildren(routers []Router)
 	// Child 返回指定名称的子路由
 	Child(name string) (Router, bool)
+	// Children 返回所有子路由
+	Children() []Router
 	// RemoveChild 移除指定名称的路由,并返回该路由
 	RemoveChild(name string) (Router, bool)
 	// AddPreFilter 添加前置过滤器
@@ -50,10 +54,6 @@ type RouterContext interface {
 	Value(name string) string
 	// SetValue 设置路由值
 	SetValue(name string, value string)
-	// Terminated 路由过程是否终止
-	Terminated() bool
-	// Terminate 终止路由过程,终止后该路由上下文将不会被继续路由并且不会被执行器执行
-	Terminate()
 	// Data 返回路由上下文携带的信息
 	Data() interface{}
 }
@@ -68,8 +68,8 @@ type RouterExcutor interface {
 	RouterContext() RouterContext
 	// SetRouterContext 设置路由上下文
 	SetRouterContext(context RouterContext)
-	// Excute 执行
-	Excute() error
+	// Execute 执行
+	Execute() error
 }
 
 // 前置过滤器
@@ -84,4 +84,34 @@ type PostFilter interface {
 	// Filter 过滤该请求
 	// return:返回true表示继续处理,否则终止路由过程,后续的过滤器也不会执行
 	Filter(context RouterContext) bool
+}
+
+// 路由创建器
+//  name: 路由名称
+//  match: 用于进行匹配的内容,必须是指定路由所需要的内容
+type RouterCreator func(name string, match interface{}) (Router, error)
+
+var (
+	mu       sync.Mutex                       //互斥锁
+	creators = make(map[string]RouterCreator) //创建器映射
+)
+
+// NewRouter 创建一个新的Router
+//  kind:路由类型
+func NewRouter(kind string, name string, match interface{}) (Router, error) {
+	var creator, ok = creators[kind]
+	if !ok {
+		return nil, ErrorInvalidKind.Format(kind).Error()
+	}
+	return creator(name, match)
+}
+
+// Register 注册RouterCreator创建器
+func Register(kind string, creator RouterCreator) {
+	if creator == nil {
+		panic(ErrorInvalidRouterCreator)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	creators[kind] = creator
 }

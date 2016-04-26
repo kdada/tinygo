@@ -15,10 +15,10 @@ type FileWriter struct {
 }
 
 // NewFileWriter 创建文件写入器
-func NewFileWriter() *FileWriter {
-	var err = os.Mkdir("logs", 0770)
+func NewFileWriter(path string) *FileWriter {
+	var err = os.Mkdir(path, 0770)
 	if err != nil && !os.IsExist(err) {
-		panic(ErrorFailToCreateFile.Format("logs"))
+		panic(ErrorFailToCreatePath.Format(path))
 	}
 	return new(FileWriter)
 }
@@ -67,6 +67,12 @@ func (this *FileWriter) createLogFile(date time.Time) error {
 }
 
 // FileLoggerCreator
-func FileLoggerCreator() (Logger, error) {
-	return NewSimpleLogger(NewSimpleLogWriter(NewFileWriter())), nil
+func FileLoggerCreator(param interface{}) (Logger, error) {
+	if param != nil {
+		var path, ok = param.(string)
+		if ok {
+			return NewSimpleLogger(NewSimpleLogWriter(NewFileWriter(path))), nil
+		}
+	}
+	return nil, ErrorInvalidParam.Error()
 }

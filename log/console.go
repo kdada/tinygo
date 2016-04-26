@@ -24,6 +24,6 @@ func (this *ConsoleWriter) Close() {
 }
 
 // ConsoleLoggerCreator
-func ConsoleLoggerCreator() (Logger, error) {
+func ConsoleLoggerCreator(param interface{}) (Logger, error) {
 	return NewSimpleLogger(NewSimpleLogWriter(NewConsoleWriter())), nil
 }

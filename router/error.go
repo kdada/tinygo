@@ -31,4 +31,8 @@ const (
 	ErrorRegexpNoneError      Error = "ErrorRegexpNoneError(R10031),字符串(%s)不包含正则表达式"
 	ErrorRegexpFormatError    Error = "ErrorRegexpFormatError(R10032),字符串(%s)格式错误"
 	ErrorRegexpNotMatchError  Error = "ErrorRegexpNotMatchError(R10033),正则表达式匹配失败"
+	ErrorExecutorDoNothing    Error = "ErrorExecutorDoNothing(R10050),空执行器错误,该执行器没有执行任何内容"
+	ErrorInvalidKind          Error = "ErrorInvalidKind(R10060),无效的路由类型(%s)"
+	ErrorInvalidRouterCreator Error = "ErrorInvalidRouterCreator(R10070),无效的路由创建器"
+	ErrorInvalidMatchParam    Error = "ErrorInvalidMatchParam(R10080),无效的match参数(%s),期望参数类型为%s"
 )

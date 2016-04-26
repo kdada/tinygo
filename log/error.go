@@ -29,5 +29,6 @@ const (
 	ErrorInvalidKind           Error = "ErrorInvalidKind(L10010):无效的日志类型(%s)"
 	ErrorInvalidLogWriter      Error = "ErrorInvalidLogWriter(L10011):无效的日志写入器"
 	ErrorLogWriterInvalidParam Error = "ErrorLogWriterInvalidParam(L10020):SimpleLogWriter.SetAsync参数为nil"
-	ErrorFailToCreateFile      Error = "ErrorFailToCreateFile(L10030):无法创建日志目录(%s)"
+	ErrorFailToCreatePath      Error = "ErrorFailToCreatePath(L10030):无法创建日志目录(%s)"
+	ErrorInvalidParam          Error = "ErrorInvalidParam(L10040):无效的日志创建参数"
 )

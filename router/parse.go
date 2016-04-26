@@ -38,13 +38,13 @@ func ParseReg(exp string) (*RegSegment, error) {
 	var lastSegStart = 0
 	for i, b := range bytes {
 		switch b {
-		case 40: //"("
+		case 0x7B: //"{"
 			{
 				//截取普通字符串
 				rs.Exp += string(bytes[lastSegStart:i])
 				lastSegStart = i + 1
 			}
-		case 41: //")"
+		case 0x7D: //"}"
 			{
 				//截取正则字符串
 				var reg = string(bytes[lastSegStart:i])
