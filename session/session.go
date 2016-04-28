@@ -50,7 +50,9 @@ type SessionContainer interface {
 }
 
 // SessionContainer创建器
-type SessionContainerCreator func(expire int64) (SessionContainer, error)
+//  expire:session有效期
+//  source:存储源
+type SessionContainerCreator func(expire int64, source string) (SessionContainer, error)
 
 var (
 	mu       sync.Mutex                                 //互斥锁
@@ -59,12 +61,12 @@ var (
 
 // NewSessionContainer 创建一个新的Session容器
 //  expire:最大过期时间(秒)
-func NewSessionContainer(kind string, expire int64) (SessionContainer, error) {
+func NewSessionContainer(kind string, expire int64, source string) (SessionContainer, error) {
 	var creator, ok = creators[kind]
 	if !ok {
 		return nil, ErrorInvalidSessionKind.Format(kind).Error()
 	}
-	return creator(expire)
+	return creator(expire, source)
 }
 
 // Register 注册SessionContainer创建器

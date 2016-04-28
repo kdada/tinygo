@@ -12,6 +12,8 @@ type Config interface {
 	GlobalSection() Section
 	// Section 根据name获取指定名称的配置段
 	Section(name string) (Section, bool)
+	// Sections 返回全部节
+	Sections() []Section
 }
 
 // 配置信息段

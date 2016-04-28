@@ -128,8 +128,8 @@ type MemSessionContainer struct {
 	closed         bool                   //是否关闭
 }
 
-// newMemSessionContainer 创建Session提供器
-func newMemSessionContainer(expire int64) (SessionContainer, error) {
+// NewMemSessionContainer 创建Session提供器(数据存储在内存中,source参数无效)
+func NewMemSessionContainer(expire int64, source string) (SessionContainer, error) {
 	var container = new(MemSessionContainer)
 	container.sessions = make(map[string]*MemSession, 100)
 	container.defaultExpire = expire

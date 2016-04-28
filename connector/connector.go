@@ -1,6 +1,15 @@
+//  Package connector 实现了基本的连接器接口
 package connector
 
 import "sync"
+
+// Dispatcher 调度器
+type Dispatcher interface {
+	// Dispatch 分发
+	//  segments:用于进行分发的路径段信息
+	//  data:连接携带的数据
+	Dispatch(segments []string, data interface{})
+}
 
 // 连接器
 type Connector interface {
@@ -10,23 +19,15 @@ type Connector interface {
 	Run()
 	// Stop 停止运行
 	Stop() error
-	// EventHandler 返回事件处理器
-	EventHandler() EventHandler
-	// SetHandler 设置事件处理器
-	SetEventHandler(handler EventHandler)
+	// Dispatcher 返回当前调度器
+	Dispatcher() Dispatcher
+	// SetDispatcher 设置调度器
+	SetDispatcher(dispatcher Dispatcher)
 }
 
-// 事件处理器
-type EventHandler interface {
-	// 连接器收到新连接后触发
-	Connected(context interface{})
-	// 出现错误时触发
-	Error(code int, context interface{})
-}
-
-// 链接器创建器
-//  param: 日志参数
-type ConnectorCreator func(param interface{}) (Connector, error)
+// 连接器创建器
+//  suorce: 连接器监听位置(例如:127.0.0.1:9999表示监听127.0.0.1上的9999端口)
+type ConnectorCreator func(source string) (Connector, error)
 
 var (
 	mu       sync.Mutex                          //互斥锁
@@ -35,12 +36,12 @@ var (
 
 // NewConnector 创建一个新的Connector
 //  kind:日志类型
-func NewConnector(kind string, param interface{}) (Connector, error) {
+func NewConnector(kind string, source string) (Connector, error) {
 	var creator, ok = creators[kind]
 	if !ok {
 		return nil, ErrorInvalidKind.Format(kind).Error()
 	}
-	return creator(param)
+	return creator(source)
 }
 
 // Register 注册Connector创建器

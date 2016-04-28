@@ -30,8 +30,8 @@ type Logger interface {
 }
 
 // 日志创建器
-//  param: 日志参数
-type LoggerCreator func(param interface{}) (Logger, error)
+//  source: 日志存储位置
+type LoggerCreator func(source string) (Logger, error)
 
 var (
 	mu       sync.Mutex                       //互斥锁
@@ -40,7 +40,7 @@ var (
 
 // NewLogger 创建一个新的Logger
 //  kind:日志类型
-func NewLogger(kind string, param interface{}) (Logger, error) {
+func NewLogger(kind string, param string) (Logger, error) {
 	var creator, ok = creators[kind]
 	if !ok {
 		return nil, ErrorInvalidKind.Format(kind).Error()

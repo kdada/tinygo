@@ -51,7 +51,7 @@ type RouterContext interface {
 	// Unmatch 失配数量
 	Unmatch(count int)
 	// Value 返回路由值
-	Value(name string) string
+	Value(name string) (string, bool)
 	// SetValue 设置路由值
 	SetValue(name string, value string)
 	// Data 返回路由上下文携带的信息

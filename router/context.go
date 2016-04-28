@@ -24,8 +24,8 @@ func (this *BaseContext) Unmatch(count int) {
 }
 
 // Value 返回路由值
-func (this *BaseContext) Value(name string) string {
-	return ""
+func (this *BaseContext) Value(name string) (string, bool) {
+	return "", false
 }
 
 // SetValue 设置路由值

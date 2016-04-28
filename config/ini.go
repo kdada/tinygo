@@ -112,6 +112,15 @@ func (this *IniConfig) Section(name string) (Section, bool) {
 	return section, ok
 }
 
+// Sections 返回全部节
+func (this *IniConfig) Sections() []Section {
+	var arr = make([]Section, 0, len(this.sections))
+	for _, c := range this.sections {
+		arr = append(arr, c)
+	}
+	return arr
+}
+
 // Ini配置段
 type IniSection struct {
 	name string            //段名称

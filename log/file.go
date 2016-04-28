@@ -67,12 +67,9 @@ func (this *FileWriter) createLogFile(date time.Time) error {
 }
 
 // FileLoggerCreator
-func FileLoggerCreator(param interface{}) (Logger, error) {
-	if param != nil {
-		var path, ok = param.(string)
-		if ok {
-			return NewSimpleLogger(NewSimpleLogWriter(NewFileWriter(path))), nil
-		}
+func FileLoggerCreator(path string) (Logger, error) {
+	if path == "" {
+		return nil, ErrorInvalidParam.Error()
 	}
-	return nil, ErrorInvalidParam.Error()
+	return NewSimpleLogger(NewSimpleLogWriter(NewFileWriter(path))), nil
 }
