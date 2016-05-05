@@ -1,4 +1,4 @@
-package connector
+package app
 
 import (
 	"errors"
@@ -25,8 +25,7 @@ func (this Error) String() string {
 
 // 错误码
 const (
-	ErrorInvalidConnectorCreator Error = "ErrorInvalidConnectorCreator(N10000):无效的连接创建器"
-	ErrorInvalidKind             Error = "ErrorInvalidKind(L10010):无效的连接类型(%s)"
-	ErrorFailToStop              Error = "ErrorFailToStop(L10020):无法停止连接器(%s)"
-	ErrorInvalidDispatcher       Error = "ErrorInvalidDispatcher(L10030):无效的Dispatcher,无法启动Connector(%s)"
+//ErrorConfigNotCorrect     Error = "ErrorConfigNotCorrect(T10010):配置文件中%s的%s不正确"
+//ErrorConnectorCreateFail  Error = "ErrorConnectorCreateFail(T10020):连接器(%s)创建失败,%s"
+//ErrorRootRouterCreateFail Error = "ErrorRootRouterCreateFail(T10030):根路由(%s)创建失败,%s"
 )

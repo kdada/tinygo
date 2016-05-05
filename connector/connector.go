@@ -16,7 +16,7 @@ type Connector interface {
 	// Init 初始化连接器设置
 	Init() error
 	// Run 运行(接受连接并进行处理,阻塞)
-	Run()
+	Run() error
 	// Stop 停止运行
 	Stop() error
 	// Dispatcher 返回当前调度器
