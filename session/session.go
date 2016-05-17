@@ -30,7 +30,7 @@ type Session interface {
 	// Delete 删除指定键
 	Delete(key string)
 	// SetDeadline 设置有效期限
-	SetDeadline(second int64)
+	SetDeadline(second int)
 	// Dead 让Session立即过期
 	Die()
 	// Dead 判断Session是否过期
@@ -52,7 +52,7 @@ type SessionContainer interface {
 // SessionContainer创建器
 //  expire:session有效期
 //  source:存储源
-type SessionContainerCreator func(expire int64, source string) (SessionContainer, error)
+type SessionContainerCreator func(expire int, source string) (SessionContainer, error)
 
 var (
 	mu       sync.Mutex                                 //互斥锁
@@ -61,7 +61,7 @@ var (
 
 // NewSessionContainer 创建一个新的Session容器
 //  expire:最大过期时间(秒)
-func NewSessionContainer(kind string, expire int64, source string) (SessionContainer, error) {
+func NewSessionContainer(kind string, expire int, source string) (SessionContainer, error) {
 	var creator, ok = creators[kind]
 	if !ok {
 		return nil, ErrorInvalidSessionKind.Format(kind).Error()

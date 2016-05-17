@@ -23,7 +23,7 @@ type Section interface {
 	// String 获取字符串
 	String(key string) (string, error)
 	// Int 获取整数
-	Int(key string) (int64, error)
+	Int(key string) (int, error)
 	// Bool 获取布尔值
 	Bool(key string) (bool, error)
 	// Float 获取浮点值

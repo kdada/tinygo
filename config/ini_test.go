@@ -35,5 +35,9 @@ func TestIniConfig(t *testing.T) {
 		t.Error("TestString(键)错误")
 	}
 	var release, _ = config.Section("release")
+	var s, _ = release.String("Test kkk")
+	if s != "asdasd" {
+		t.Error("Test kkk(键)错误")
+	}
 	t.Log(release)
 }

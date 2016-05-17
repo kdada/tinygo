@@ -10,6 +10,8 @@ type UnlimitedRouter struct {
 }
 
 // NewUnlimitedRouter 创建无限路由
+//  name:无限路由名称
+//  match:无限路由不需要匹配规则,该参数无效
 func NewUnlimitedRouter(name string, match interface{}) (Router, error) {
 	var r = new(UnlimitedRouter)
 	r.name = name
@@ -21,6 +23,11 @@ func NewUnlimitedRouter(name string, match interface{}) (Router, error) {
 // Name 返回当前路由名称
 func (this *UnlimitedRouter) Name() string {
 	return this.name
+}
+
+// MatchString 返回当前路由用于进行匹配的字符串
+func (this *UnlimitedRouter) MatchString() string {
+	return ""
 }
 
 // Parent 返回当前父路由,每个Router只能有一个Parent
@@ -42,8 +49,8 @@ func (this *UnlimitedRouter) SetParent(router Router) error {
 	return ErrorInvalidParentRouter.Error()
 }
 
-// Named 无限路由不使用名称进行匹配
-func (this *UnlimitedRouter) Named() bool {
+// Normal 返回当前路由是否为通常路由,通常路由可以使用MatchString()返回的字符串进行直接匹配
+func (this *UnlimitedRouter) Normal() bool {
 	return false
 }
 

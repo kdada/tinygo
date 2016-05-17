@@ -12,7 +12,7 @@ type MemSession struct {
 	provider  *MemSessionContainer   //会话提供器
 	sessionId string                 //会话id
 	data      map[string]interface{} //数据
-	deadline  int64                  //死亡时间(秒),从1970年开始
+	deadline  int                    //死亡时间(秒),从1970年开始
 }
 
 // newMemSession 创建内存Session
@@ -105,8 +105,8 @@ func (this *MemSession) Delete(key string) {
 
 // SetDeadline 设置有效期限
 //  second:从当前时间开始有效的秒数
-func (this *MemSession) SetDeadline(second int64) {
-	this.deadline = time.Now().Unix() + second
+func (this *MemSession) SetDeadline(second int) {
+	this.deadline = int(time.Now().Unix()) + second
 }
 
 // Die 让Session立即过期
@@ -116,20 +116,20 @@ func (this *MemSession) Die() {
 
 // Dead 判断Session是否过期
 func (this *MemSession) Dead() bool {
-	return time.Now().Unix() > this.deadline
+	return int(time.Now().Unix()) > this.deadline
 }
 
 // 内存Session容器
 type MemSessionContainer struct {
 	sessionCounter int                    //session计数器
 	sessions       map[string]*MemSession //存储Session
-	defaultExpire  int64                  //默认过期时间
+	defaultExpire  int                    //默认过期时间
 	rwm            sync.RWMutex           //读写锁
 	closed         bool                   //是否关闭
 }
 
 // NewMemSessionContainer 创建Session提供器(数据存储在内存中,source参数无效)
-func NewMemSessionContainer(expire int64, source string) (SessionContainer, error) {
+func NewMemSessionContainer(expire int, source string) (SessionContainer, error) {
 	var container = new(MemSessionContainer)
 	container.sessions = make(map[string]*MemSession, 100)
 	container.defaultExpire = expire

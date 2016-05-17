@@ -32,8 +32,3 @@ func (this *BaseContext) Value(name string) (string, bool) {
 func (this *BaseContext) SetValue(name string, value string) {
 
 }
-
-// Data 返回路由上下文携带的信息
-func (this *BaseContext) Data() interface{} {
-	return nil
-}

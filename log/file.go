@@ -4,23 +4,27 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
 // 文件写入器
 type FileWriter struct {
-	file   *os.File      // 日志文件
-	writer *bufio.Writer // 写入工具
-	day    int           // 文件日期
+	path   string        //日志文件路径
+	file   *os.File      //日志文件
+	writer *bufio.Writer //写入工具
+	day    int           //文件日期
 }
 
 // NewFileWriter 创建文件写入器
 func NewFileWriter(path string) *FileWriter {
-	var err = os.Mkdir(path, 0770)
+	var err = os.MkdirAll(path, 0770)
 	if err != nil && !os.IsExist(err) {
 		panic(ErrorFailToCreatePath.Format(path))
 	}
-	return new(FileWriter)
+	var writer = new(FileWriter)
+	writer.path = path
+	return writer
 }
 
 // Write 日志写入
@@ -56,8 +60,15 @@ func (this *FileWriter) createLogFile(date time.Time) error {
 		}
 	}
 	//创建新的日志文件
+	var dir = date.Format("2006-01")
+	var path = filepath.Join(this.path, dir)
+	var err = os.MkdirAll(path, 0770)
+	if err != nil {
+		return err
+	}
 	var fileName = date.Format("2006-01-02") + ".log"
-	file, err := os.OpenFile("logs/"+fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
+	var filePath = filepath.Join(path, fileName)
+	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil && !os.IsExist(err) {
 		return err
 	}

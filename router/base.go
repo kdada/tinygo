@@ -9,16 +9,18 @@ import (
 // 基础路由
 type BaseRouter struct {
 	UnlimitedRouter
-	namedChildren   map[string]Router //名称子路由
-	unnamedChildren map[string]Router //非名称子路由
-	reg             bool              //是否是正则路由
-	regexp          *regexp.Regexp    //正则表达式
-	keys            []string          //可提取keys
+	children         map[string]Router
+	normalChildren   map[string]Router //通常子路由
+	abnormalChildren map[string]Router //非通常子路由
+	match            string            //用于匹配的字符串,可能包含正则信息
+	reg              bool              //是否是正则路由
+	regexp           *regexp.Regexp    //正则表达式
+	keys             []string          //可提取keys
 }
 
-// NewBaseRouter 创建基本路由
-//  name:路由名称,如果match为nil或者不包含正则,则使用name进行路由匹配
-//  match:必须是指定规则的正则字符串或nil,格式可以为p{id=\d+}.html 解析为 ^p(\d+).html$
+// NewBaseRouter 创建基本路由,非正则路由不区分大小写,正则路由是否区分大小写由正则表达式确定
+//  name:路由名称,如果match为nil,则使用name进行路由匹配
+//  match:用于进行匹配的值,可以包含指定规则的正则字符串,格式可以为p{id=\d+}.html 解析为 ^p(\d+).html$
 func NewBaseRouter(name string, match interface{}) (Router, error) {
 	var r = new(BaseRouter)
 	r.name = name
@@ -27,6 +29,7 @@ func NewBaseRouter(name string, match interface{}) (Router, error) {
 		if !ok {
 			return nil, ErrorInvalidMatchParam.Format(reflect.TypeOf(match).String(), "string").Error()
 		}
+		r.match = matchString
 		var seg, err = ParseReg(matchString)
 		if err == nil {
 			r.reg = true
@@ -35,38 +38,46 @@ func NewBaseRouter(name string, match interface{}) (Router, error) {
 		} else {
 			r.reg = false
 		}
+	} else {
+		r.match = r.name
 	}
-	r.namedChildren = make(map[string]Router, 0)
-	r.unnamedChildren = make(map[string]Router, 0)
+	r.children = make(map[string]Router, 0)
+	r.normalChildren = make(map[string]Router, 0)
+	r.abnormalChildren = make(map[string]Router, 0)
 	r.preFilters = make([]PreFilter, 0)
 	r.postFilters = make([]PostFilter, 0)
 	return r, nil
 }
 
-// Named 返回当前是否使用Name进行路由匹配
-func (this *BaseRouter) Named() bool {
+// MatchString 返回当前路由用于进行匹配的字符串
+func (this *BaseRouter) MatchString() string {
+	return this.match
+}
+
+// Normal 返回当前路由是否为通常路由,通常路由可以使用MatchString()返回的字符串进行相等匹配
+func (this *BaseRouter) Normal() bool {
 	return !this.reg
 }
 
-// unifyName 统一名称
-func (this *BaseRouter) unifyName(name string) string {
-	return strings.ToLower(name)
+// unify 统一字符串大小写
+func (this *BaseRouter) unify(str string) string {
+	return strings.ToLower(str)
 }
 
 // AddChild 添加子路由
 func (this *BaseRouter) AddChild(router Router) {
-	var name = this.unifyName(router.Name())
-	var child, ok = this.Child(name)
+	var child, ok = this.Child(router.Name())
 	if ok {
 		//合并路由
 		child.AddChildren(router.Children())
 	} else {
 		//添加路由
-		if router.Named() {
-			this.namedChildren[name] = router
+		if router.Normal() {
+			this.normalChildren[this.unify(router.MatchString())] = router
 		} else {
-			this.unnamedChildren[name] = router
+			this.abnormalChildren[router.Name()] = router
 		}
+		this.children[router.Name()] = router
 		router.SetParent(this)
 	}
 }
@@ -80,22 +91,14 @@ func (this *BaseRouter) AddChildren(routers []Router) {
 
 // Child 返回指定名称的子路由
 func (this *BaseRouter) Child(name string) (Router, bool) {
-	name = this.unifyName(name)
-	var r, ok = this.namedChildren[name]
-	if ok {
-		return r, ok
-	}
-	r, ok = this.unnamedChildren[name]
+	var r, ok = this.children[name]
 	return r, ok
 }
 
 // Children 返回全部子路由
 func (this *BaseRouter) Children() []Router {
-	var routers = make([]Router, len(this.namedChildren)+len(this.unnamedChildren))
-	for _, v := range this.namedChildren {
-		routers = append(routers, v)
-	}
-	for _, v := range this.unnamedChildren {
+	var routers = make([]Router, len(this.children))
+	for _, v := range this.children {
 		routers = append(routers, v)
 	}
 	return []Router{}
@@ -103,15 +106,14 @@ func (this *BaseRouter) Children() []Router {
 
 // RemoveChild 移除指定名称的路由,并返回该路由
 func (this *BaseRouter) RemoveChild(name string) (Router, bool) {
-	name = this.unifyName(name)
-	var r, ok = this.namedChildren[name]
+	var r, ok = this.children[name]
 	if ok {
-		delete(this.namedChildren, name)
-		return r, ok
-	}
-	r, ok = this.unnamedChildren[name]
-	if ok {
-		delete(this.unnamedChildren, name)
+		delete(this.children, name)
+		if r.Normal() {
+			delete(this.normalChildren, this.unify(r.MatchString()))
+		} else {
+			delete(this.abnormalChildren, name)
+		}
 		return r, ok
 	}
 	return nil, false
@@ -121,7 +123,7 @@ func (this *BaseRouter) RemoveChild(name string) (Router, bool) {
 func (this *BaseRouter) Match(context RouterContext) (RouterExcutor, bool) {
 	var segs = context.Segments()
 	var data [][]string
-	if !this.Named() {
+	if !this.Normal() {
 		data = this.regexp.FindAllStringSubmatch(segs[0], 1)
 		if len(data) <= 0 {
 			return nil, false
@@ -143,13 +145,13 @@ func (this *BaseRouter) Match(context RouterContext) (RouterExcutor, bool) {
 		executor.SetRouterContext(context)
 	} else {
 		//路由传递
-		var name = this.unifyName(segs[0])
-		var r, ok = this.namedChildren[name]
+		var match = this.unify(segs[0])
+		var r, ok = this.normalChildren[match]
 		if ok {
 			executor, ok = r.Match(context)
 		}
 		if !ok {
-			for _, v := range this.unnamedChildren {
+			for _, v := range this.abnormalChildren {
 				executor, ok = v.Match(context)
 				if ok {
 					break

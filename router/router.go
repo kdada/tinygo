@@ -5,12 +5,14 @@ import "sync"
 type Router interface {
 	// Name 返回当前路由名称
 	Name() string
+	// MatchString 返回当前路由用于进行匹配的字符串
+	MatchString() string
 	// Parent 返回当前父路由,每个Router只能有一个Parent
 	Parent() Router
 	// SetParent 设置当前路由父路由,当前路由必须是父路由的子路由
 	SetParent(router Router) error
-	// Named 返回当前路由是否为名称路由(指定字符串与路由段字符串相等则匹配)
-	Named() bool
+	// Normal 返回当前路由是否为通常路由,通常路由可以使用MatchString()返回的字符串进行直接匹配
+	Normal() bool
 	// AddChild 添加子路由,Name相同的路由自动合并
 	AddChild(router Router)
 	// AddChildren 批量添加子路由,Name相同的路由自动合并
@@ -54,8 +56,6 @@ type RouterContext interface {
 	Value(name string) (string, bool)
 	// SetValue 设置路由值
 	SetValue(name string, value string)
-	// Data 返回路由上下文携带的信息
-	Data() interface{}
 }
 
 // 路由执行器

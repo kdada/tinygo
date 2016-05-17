@@ -16,35 +16,38 @@ func iniConfigPaser(data []byte) (Config, error) {
 		dataLength -= 3
 	}
 	for i := 0; i < dataLength; i++ {
-		var char = string(data[i])
+		var char = data[i]
 		//忽略空白字符
-		if char == " " || char == "\n" || char == "\r" {
+		if char == ' ' || char == '\n' || char == '\r' {
 			continue
 		}
 		switch char {
-		case "#", ";":
+		case '#', ';':
 			{
 				//处理以#和;开头的注释文本
 				for j := i + 1; j < dataLength; j++ {
-					if string(data[j]) == "\n" {
+					if data[j] == '\n' {
 						i = j
 						break
 					}
+					if j == dataLength-1 {
+						i = j + 1
+					}
 				}
 			}
-		case "[":
+		case '[':
 			{
 				//处理[]段
 				var found = false
 				for j := i + 1; j < dataLength; j++ {
-					if !found && string(data[j]) == "]" {
+					if !found && data[j] == ']' {
 						var sectionName = string(data[i+1 : j])
 						var section = newIniSection(sectionName)
 						config.sections[sectionName] = section
 						currentSection = section
 						found = true
 					}
-					if string(data[j]) == "\n" || j == dataLength-1 {
+					if data[j] == '\n' || j == dataLength-1 {
 						if !found {
 							return nil, ErrorNotMatch.Format("]").Error()
 						}
@@ -61,14 +64,17 @@ func iniConfigPaser(data []byte) (Config, error) {
 				var key = ""
 				var value = ""
 				for j := i + 1; j < dataLength; j++ {
-					if !keyFound && string(data[j]) == "=" {
+					if !keyFound && data[j] == '=' {
 						key = string(data[i:j])
 						keyEndPos = j
 						keyFound = true
 					}
 
-					if string(data[j]) == "\n" || j == dataLength-1 {
+					if data[j] == '\n' || j == dataLength-1 {
 						if keyFound {
+							if j == dataLength-1 {
+								j++
+							}
 							value = string(data[keyEndPos+1 : j])
 							//忽略两头的空白字符
 							key = strings.TrimSpace(key)
@@ -156,12 +162,12 @@ func (this *IniSection) String(key string) (string, error) {
 }
 
 // Int 获取整数
-func (this *IniSection) Int(key string) (int64, error) {
+func (this *IniSection) Int(key string) (int, error) {
 	var value, ok = this.kvs[key]
 	if ok {
 		var result, err = strconv.ParseInt(value, 0, 64)
 		if err == nil {
-			return result, nil
+			return int(result), nil
 		}
 		return 0, ErrorInvalidTypeConvertion.Format(value, "int64").Error()
 	}
