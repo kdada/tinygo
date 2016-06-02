@@ -1,4 +1,4 @@
-package app
+package web
 
 import (
 	"errors"
@@ -25,7 +25,7 @@ func (this Error) String() string {
 
 // 错误码
 const (
-//ErrorConfigNotCorrect     Error = "ErrorConfigNotCorrect(T10010):配置文件中%s的%s不正确"
-//ErrorConnectorCreateFail  Error = "ErrorConnectorCreateFail(T10020):连接器(%s)创建失败,%s"
-//ErrorRootRouterCreateFail Error = "ErrorRootRouterCreateFail(T10030):根路由(%s)创建失败,%s"
+	ErrorConfigNotCorrect     Error = "ErrorConfigNotCorrect(T10010):配置文件中%s的%s不正确"
+	ErrorConnectorCreateFail  Error = "ErrorConnectorCreateFail(T10020):连接器(%s)创建失败,%s"
+	ErrorRootRouterCreateFail Error = "ErrorRootRouterCreateFail(T10030):根路由(%s)创建失败,%s"
 )

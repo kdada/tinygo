@@ -1,34 +1,27 @@
-// Package tinygo 实现了一个轻量级Http框架
+// Package tinygo 实现一个组合式应用管理器
 package tinygo
 
-import (
-	"strconv"
+// tinygo App管理器
+var manager, _ = NewManager()
 
-	"github.com/kdada/tinygo/app"
-	"github.com/kdada/tinygo/connector"
-	"github.com/kdada/tinygo/router"
-)
+// SetEvent 设置App管理器事件
+func SetEvent(event ManagerEvent) {
+	manager.Event = event
+}
 
-var Manager, _ = app.NewManager()
+// AddApp 添加App
+func AddApp(app App) {
+	manager.AddApp(app)
+}
 
-func Run(appDir string, configFile string, root router.Router) error {
-	//读取配置文件
-	var config, err = ReadHttpConfig(appDir, configFile)
-	if err != nil {
-		return err
+// AddApps 批量添加App
+func AddApps(apps ...App) {
+	for _, app := range apps {
+		AddApp(app)
 	}
-	var conn connector.Connector
-	if config.Https {
-		panic("https not defined")
-	} else {
-		conn, err = connector.NewConnector("http", ":"+strconv.Itoa(config.Port))
-		if err != nil {
-			return err
-		}
-	}
-	var dispatcher = NewHttpProcessor(root, config)
-	var a = app.NewApp(conn, dispatcher)
-	Manager.AddApp(a)
-	Manager.Run()
-	return nil
+}
+
+// Run 运行
+func Run() {
+	manager.Run()
 }

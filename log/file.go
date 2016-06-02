@@ -60,13 +60,13 @@ func (this *FileWriter) createLogFile(date time.Time) error {
 		}
 	}
 	//创建新的日志文件
-	var dir = date.Format("2006-01")
+	var dir = date.Format("200601")
 	var path = filepath.Join(this.path, dir)
 	var err = os.MkdirAll(path, 0770)
 	if err != nil {
 		return err
 	}
-	var fileName = date.Format("2006-01-02") + ".log"
+	var fileName = date.Format("20060102") + ".log"
 	var filePath = filepath.Join(path, fileName)
 	file, err := os.OpenFile(filePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0660)
 	if err != nil && !os.IsExist(err) {

@@ -1,4 +1,4 @@
-package tinygo
+package web
 
 import "github.com/kdada/tinygo/router"
 

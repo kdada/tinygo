@@ -11,7 +11,7 @@ var consoleLogger Logger
 
 func TestMain(m *testing.M) {
 	var err error
-	consoleLogger, err = NewLogger("console", nil)
+	consoleLogger, err = NewLogger("console", "")
 	if err != nil {
 		fmt.Println(err)
 		return
