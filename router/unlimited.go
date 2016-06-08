@@ -129,9 +129,9 @@ func (this *UnlimitedRouter) RemovePostFilter(filter PostFilter) bool {
 }
 
 // ExecPostFilter 执行后置过滤器
-func (this *UnlimitedRouter) ExecPostFilter(context RouterContext) bool {
+func (this *UnlimitedRouter) ExecPostFilter(context RouterContext, result interface{}) bool {
 	for _, router := range this.postFilters {
-		var goon = router.Filter(context)
+		var goon = router.Filter(context, result)
 		if !goon {
 			return false
 		}

@@ -1,7 +1,7 @@
 package router
 
 type BaseContext struct {
-	Segs  []string // 路由段信息
+	Segs  []string //路由段信息
 	Level int      //当前路由级别
 }
 

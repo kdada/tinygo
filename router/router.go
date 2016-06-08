@@ -34,7 +34,7 @@ type Router interface {
 	// RemovePostFilter 移除后置过滤器
 	RemovePostFilter(filter PostFilter) bool
 	// ExecPostFilter 执行后置过滤器
-	ExecPostFilter(context RouterContext) bool
+	ExecPostFilter(context RouterContext, result interface{}) bool
 	// SetRouterExcutor 设置路由执行器生成方法
 	SetRouterExcutorGenerator(RouterExcutorGenerator)
 	// Match 匹配指定路由上下文,匹配成功则返回RouterExcutor
@@ -68,8 +68,8 @@ type RouterExcutor interface {
 	RouterContext() RouterContext
 	// SetRouterContext 设置路由上下文
 	SetRouterContext(context RouterContext)
-	// Execute 执行
-	Execute() error
+	// Execute 执行,并返回相应结果
+	Execute() interface{}
 }
 
 // 前置过滤器
@@ -83,7 +83,7 @@ type PreFilter interface {
 type PostFilter interface {
 	// Filter 过滤该请求
 	// return:返回true表示继续处理,否则终止路由过程,后续的过滤器也不会执行
-	Filter(context RouterContext) bool
+	Filter(context RouterContext, result interface{}) bool
 }
 
 // 路由创建器
