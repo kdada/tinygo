@@ -2,6 +2,7 @@ package router
 
 // 无限路由
 type UnlimitedRouter struct {
+	self              Router                 //路由自身(所有继承当前路由的路由在创建时需要设置self=this)
 	parent            Router                 //父路由
 	name              string                 //当前路由名称
 	preFilters        []PreFilter            //在子路由处理之前执行的过滤器
@@ -17,6 +18,7 @@ func NewUnlimitedRouter(name string, match interface{}) (Router, error) {
 	r.name = name
 	r.preFilters = make([]PreFilter, 0)
 	r.postFilters = make([]PostFilter, 0)
+	r.self = r
 	return r, nil
 }
 
@@ -84,7 +86,7 @@ func (this *UnlimitedRouter) AddPreFilter(filter PreFilter) Router {
 	if filter != nil {
 		this.preFilters = append(this.preFilters, filter)
 	}
-	return this
+	return this.self
 }
 
 // RemovePreFilter 移除前置过滤器
@@ -114,7 +116,7 @@ func (this *UnlimitedRouter) AddPostFilter(filter PostFilter) Router {
 	if filter != nil {
 		this.postFilters = append(this.postFilters, filter)
 	}
-	return this
+	return this.self
 }
 
 // RemovePostFilter 移除后置过滤器

@@ -1,6 +1,6 @@
 package web
 
-import "net/http"
+import "io"
 
 // 服务端状态码
 type StatusCode int
@@ -22,12 +22,8 @@ const (
 
 // 可用于所有http方法的返回结果
 type Result interface {
-	// Code 状态码
-	Code() StatusCode
-	// Message 信息
-	Message() string
-	// Write 将Result的内容写入http.ResponseWriter
-	Write(resp http.ResponseWriter)
+	// WriteTo 将Result的内容写入writer
+	WriteTo(writer io.Writer) error
 }
 
 // 可用于Get方法的返回结果
@@ -56,3 +52,13 @@ type ConnectResult Result
 
 // 可用于Get和Post方法的返回结果
 type GetPostResult Result
+
+// 用于http的结果
+type HttpResult interface {
+	// Code 返回状态码
+	Code() StatusCode
+	// Message 返回状态信息
+	Message() string
+	// 实现Result接口
+	Result
+}

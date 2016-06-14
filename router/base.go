@@ -46,6 +46,7 @@ func NewBaseRouter(name string, match interface{}) (Router, error) {
 	r.abnormalChildren = make(map[string]Router, 0)
 	r.preFilters = make([]PreFilter, 0)
 	r.postFilters = make([]PostFilter, 0)
+	r.self = r
 	return r, nil
 }
 

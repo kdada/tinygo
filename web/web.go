@@ -9,8 +9,8 @@ import (
 
 // Web应用
 type WebApp struct {
-	conn      connector.Connector
-	processor *HttpProcessor
+	Conn      connector.Connector //链接
+	Processor *HttpProcessor      //处理器
 }
 
 // NewWebApp 创建WebApp
@@ -39,15 +39,15 @@ func NewWebApp(appDir string, configFile string, root router.Router) (*WebApp, e
 
 // Name 应用名称
 func (this *WebApp) Name() string {
-	return this.processor.Config.App
+	return this.Processor.Config.App
 }
 
 // Init 应用初始化接口
 func (this *WebApp) Init() error {
-	return this.conn.Init()
+	return this.Conn.Init()
 }
 
 // Run 应用运行接口
 func (this *WebApp) Run() error {
-	return this.conn.Run()
+	return this.Conn.Run()
 }

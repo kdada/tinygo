@@ -25,7 +25,10 @@ func (this Error) String() string {
 
 // 错误码
 const (
-	ErrorConfigNotCorrect     Error = "ErrorConfigNotCorrect(T10010):配置文件中%s的%s不正确"
-	ErrorConnectorCreateFail  Error = "ErrorConnectorCreateFail(T10020):连接器(%s)创建失败,%s"
-	ErrorRootRouterCreateFail Error = "ErrorRootRouterCreateFail(T10030):根路由(%s)创建失败,%s"
+	ErrorNotMethod               Error = "ErrorNotMethod(W10010):%s不是函数"
+	ErrorParamNotPtr             Error = "ErrorParamNotPtr(W10020):函数(%s)的参数类型(%s)不是结构体指针类型"
+	ErrorNotStructPtr            Error = "ErrorNotStructPtr(W10030):(%s)不是结构体指针类型"
+	ErrorFirstReturnMustBeResult Error = "ErrorFirstReturnMustBeResult(W10040):第一个返回值类型(%s)不符合web.Result接口"
+	ErrorNoReturn                Error = "ErrorNoReturn(W10041):函数(%s)至少拥有一个返回值并且第一个返回值必须符合web.Result类型"
+	ErrorParamNotExist           Error = "ErrorParamNotExist(W10100):参数(%s)不存在"
 )
