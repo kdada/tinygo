@@ -80,7 +80,7 @@ func (this *HttpProcessor) createCookie(name string, id string) *http.Cookie {
 	cookieValue.Value = id
 	cookieValue.Path = "/"
 	cookieValue.MaxAge = 24 * 3600
-	cookieValue.Expires = time.Now().AddDate(0, 0, 1)
+	cookieValue.Expires = time.Now().Add(time.Hour * 24)
 	cookieValue.HttpOnly = true
 	return cookieValue
 }
@@ -108,7 +108,6 @@ func (this *HttpProcessor) ResolveSession(context *Context) {
 			context.Session = ss
 		}
 	}
-
 	if this.CSRFContainer != nil {
 		//添加CSRF Session信息,CSRF的过期时间和Session相同,使用SessionExpire设置Cookie过期时间
 		var cookieValue, err = context.HttpContext.Request.Cookie(this.Config.CSRFCookieName)
@@ -155,7 +154,6 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 			this.Event.Error(this, context, err)
 		}
 	}
-
 }
 
 // HttpProcessor事件接口
