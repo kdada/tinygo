@@ -1,7 +1,9 @@
 package web
 
 import (
+	"net/http"
 	"reflect"
+	"time"
 
 	"github.com/kdada/tinygo/connector"
 	"github.com/kdada/tinygo/log"
@@ -21,6 +23,7 @@ type HttpProcessor struct {
 	CSRFContainer    session.SessionContainer //Csrf容器
 	Funcs            map[string]ParamTypeFunc //参数生成方法
 	DefaultFunc      ParamTypeFunc            //当Funcs中不存在指定类型的方法时,使用该方法处理
+	Event            HttpProcessorEvent       //处理器事件
 }
 
 // NewHttpProcessor 创建Http处理器
@@ -45,9 +48,9 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) *HttpProcessor {
 		}
 		processor.SessionContainer = container
 	}
-	//CSRF
+	//CSRF,过期时间与Session相同,CSRFExpire用于设置CSRF token的过期时间
 	if config.CSRF {
-		var container, err = session.NewSessionContainer(config.CSRFType, config.CSRFExpire, config.CSRFSource)
+		var container, err = session.NewSessionContainer(config.CSRFType, config.SessionExpire, config.CSRFSource)
 		if err != nil {
 			panic(err)
 		}
@@ -57,8 +60,71 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) *HttpProcessor {
 	processor.Funcs = make(map[string]ParamTypeFunc)
 	register(processor.Funcs)
 	processor.DefaultFunc = DefaultFunc
-
+	processor.Event = new(DefaultHttpProcessorEvent)
 	return processor
+}
+
+// ParamFunc 根据类型全名获取指定的生成方法
+func (this *HttpProcessor) ParamFunc(t string) ParamTypeFunc {
+	var f, ok = this.Funcs[t]
+	if !ok {
+		f = this.DefaultFunc
+	}
+	return f
+}
+
+// createCookie 创建cookie(有效期为1天)
+func (this *HttpProcessor) createCookie(name string, id string) *http.Cookie {
+	var cookieValue = new(http.Cookie)
+	cookieValue.Name = name
+	cookieValue.Value = id
+	cookieValue.Path = "/"
+	cookieValue.MaxAge = 24 * 3600
+	cookieValue.Expires = time.Now().AddDate(0, 0, 1)
+	cookieValue.HttpOnly = true
+	return cookieValue
+}
+
+// addCookie 添加cookie
+func (this *HttpProcessor) addCookie(context *Context, cookie *http.Cookie) {
+	context.HttpContext.ResponseWriter.Header().Add("Set-Cookie", cookie.String())
+}
+
+// ResolveSession 处理会话相关内容
+func (this *HttpProcessor) ResolveSession(context *Context) {
+	if this.SessionContainer != nil {
+		//添加Session信息
+		var cookieValue, err = context.HttpContext.Request.Cookie(this.Config.SessionCookieName)
+		var ss session.Session
+		var ok bool = false
+		if err == nil {
+			ss, ok = this.SessionContainer.Session(cookieValue.Value)
+		}
+		if !ok {
+			ss, ok = this.SessionContainer.CreateSession()
+			this.addCookie(context, this.createCookie(this.Config.SessionCookieName, ss.SessionId()))
+		}
+		if ok {
+			context.Session = ss
+		}
+	}
+
+	if this.CSRFContainer != nil {
+		//添加CSRF Session信息,CSRF的过期时间和Session相同,使用SessionExpire设置Cookie过期时间
+		var cookieValue, err = context.HttpContext.Request.Cookie(this.Config.CSRFCookieName)
+		var ss session.Session
+		var ok bool = false
+		if err == nil {
+			ss, ok = this.CSRFContainer.Session(cookieValue.Value)
+		}
+		if !ok {
+			ss, ok = this.CSRFContainer.CreateSession()
+			this.addCookie(context, this.createCookie(this.Config.CSRFCookieName, ss.SessionId()))
+		}
+		if ok {
+			context.Csrf = ss
+		}
+	}
 }
 
 // Dispatch 将接收到的请求进行分发
@@ -66,16 +132,71 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) *HttpProcessor {
 //  data:连接携带的数据
 func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 	var ct = data.(*connector.HttpContext)
-	var context = NewContext(segments, ct)
-	context.Processor = this
-	context.HttpContext.Request.ParseMultipartForm(int64(this.Config.MaxRequestMemory))
-	var executor, ok = this.Root.Match(context)
-	if ok {
-		var err = executor.Execute()
-		if err != nil {
-			panic(err)
+	var context, err = NewContext(segments, ct)
+	if err == nil {
+		context.Processor = this
+		this.ResolveSession(context)
+		if this.Event != nil {
+			this.Event.Request(this, context)
+		}
+		var executor, ok = this.Root.Match(context)
+		if ok {
+			var result = executor.Execute()
+			if this.Event != nil {
+				this.Event.RequestFinish(this, context, result)
+			}
+		} else {
+			if this.Event != nil {
+				this.Event.RouterNotFound(this, context)
+			}
 		}
 	} else {
-		panic("路由未匹配")
+		if this.Event != nil {
+			this.Event.Error(this, context, err)
+		}
 	}
+
+}
+
+// HttpProcessor事件接口
+type HttpProcessorEvent interface {
+	// 每次出现一个新请求的时候触发
+	Request(processor *HttpProcessor, context *Context)
+	// 每次请求执行完成的时候触发
+	RequestFinish(processor *HttpProcessor, context *Context, result interface{})
+	// 路由未匹配时触发
+	RouterNotFound(processor *HttpProcessor, context *Context)
+	// 出现错误时触发,出现错误时context需要检查是否为nil后才能使用
+	Error(processor *HttpProcessor, context *Context, err error)
+}
+
+// 默认事件
+type DefaultHttpProcessorEvent struct {
+}
+
+// 每次出现一个新请求的时候触发
+func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context *Context) {
+
+}
+
+// 每次请求执行完成的时候触发
+func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, context *Context, result interface{}) {
+	var rs, ok = result.([]interface{})
+	if ok && len(rs) > 0 {
+		var r, ok2 = rs[0].(Result)
+		if ok2 {
+			r.WriteTo(context.HttpContext.ResponseWriter)
+		}
+	}
+
+}
+
+// 路由未匹配时触发
+func (this *DefaultHttpProcessorEvent) RouterNotFound(processor *HttpProcessor, context *Context) {
+
+}
+
+// 出现错误时触发
+func (this *DefaultHttpProcessorEvent) Error(processor *HttpProcessor, context *Context, err error) {
+
 }

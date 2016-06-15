@@ -24,7 +24,41 @@ func (this *AdvancedExecutor) Execute() interface{} {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
-		this.Method.Call(context.Param)
+		if this.ExecutePreFilters() {
+			if this.StartMethod != nil {
+				this.StartMethod.Call(context.Param)
+			}
+			var result = this.Method.Call(context.Param)
+			if this.EndMethod != nil {
+				this.EndMethod.Call(context.Param)
+			}
+			this.ExecutePostFilters(result)
+			return result
+		}
 	}
 	return nil
+}
+
+// ExecutePreFilters 执行全部前置过滤器
+func (this *AdvancedExecutor) ExecutePreFilters() bool {
+	var rec func(r router.Router, c router.RouterContext) bool
+	rec = func(r router.Router, c router.RouterContext) bool {
+		if r.Parent() != nil && !rec(r.Parent(), c) {
+			return false
+		}
+		return r.ExecPreFilter(c)
+	}
+	return rec(this.End, this.Context)
+}
+
+// ExecutePostFilters 执行全部后置过滤器
+func (this *AdvancedExecutor) ExecutePostFilters(result interface{}) bool {
+	var r = this.End
+	for r != nil {
+		if !r.ExecPostFilter(this.RouterContext(), result) {
+			return false
+		}
+		r = r.Parent()
+	}
+	return true
 }

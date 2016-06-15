@@ -20,7 +20,7 @@ func (this *FieldMetadata) Set(instance reflect.Value, param ParamFunc) {
 	} else {
 		fValue = reflect.ValueOf(f)
 	}
-	instance.Elem().FieldByName(this.Name).Set(fValue)
+	instance.Elem().FieldByIndex(this.Field.Index).Set(fValue)
 }
 
 // 结构体元数据

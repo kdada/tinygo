@@ -3,6 +3,7 @@ package web
 import (
 	"io"
 	"mime/multipart"
+	"net/http"
 	"net/textproto"
 	"os"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/kdada/tinygo/connector"
 	"github.com/kdada/tinygo/router"
+	"github.com/kdada/tinygo/session"
 )
 
 // 表单文件
@@ -40,7 +42,7 @@ func (this *FormFile) Close() {
 
 // SaveTo 将文件保存到指定路径,保存完毕后自动关闭表单文件
 func (this *FormFile) SaveTo(path string) error {
-	var lf, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
+	var lf, err = os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0660)
 	if err == nil {
 		defer lf.Close()
 		_, err = io.Copy(lf, this.file)
@@ -54,39 +56,53 @@ func (this *FormFile) SaveTo(path string) error {
 
 type Context struct {
 	router.BaseContext
-	End         router.Router          //路由
-	Data        map[string]string      //路由信息
 	HttpContext *connector.HttpContext //http上下文
+	Session     session.Session        //http会话
+	Csrf        session.Session        //csrf会话
+	End         router.Router          //处理当前上下文的路由
 	Processor   *HttpProcessor         //生成当前上下文的处理器
 }
 
 // NewContext 创建上下文信息
-func NewContext(segments []string, context *connector.HttpContext) *Context {
+func NewContext(segments []string, context *connector.HttpContext) (*Context, error) {
+	var err = context.Request.ParseForm()
+	if err != nil {
+		return nil, err
+	}
 	var method = context.Request.Method
 	var c = new(Context)
-	c.Data = make(map[string]string, 1)
 	c.Segs = append(segments, method)
 	c.HttpContext = context
-	return c
+	return c, nil
 }
 
-// Value 返回路由值
+// Value 返回值
 func (this *Context) Value(name string) (string, bool) {
-	var value, ok = this.Data[name]
-	return value, ok
+	return this.HttpContext.Request.Form.Get(name), true
 }
 
-// SetValue 设置路由值
+// Value 返回值数组
+func (this *Context) Values(name string) ([]string, bool) {
+	var result, ok = this.HttpContext.Request.Form[name]
+	return result, ok
+}
+
+// SetValue 设置值
 func (this *Context) SetValue(name string, value string) {
-	this.Data[name] = value
+	var _, ok = this.HttpContext.Request.Form[name]
+	if ok {
+		this.HttpContext.Request.Form.Add(name, value)
+	} else {
+		this.HttpContext.Request.Form.Set(name, value)
+	}
 }
 
-// Param 根据名称和类型生成相应类型的数据
+// Param 根据名称和类型生成相应类型的数据,使用HttpProcessor中定义的参数生成方法
+//  name:名称,根据该名称从Request里取值
+//  t:生成类型,将对应值转换为该类型
+//  return:返回指定类型的数据
 func (this *Context) Param(name string, t reflect.Type) interface{} {
-	var f, ok = this.Processor.Funcs[t.String()]
-	if !ok {
-		f = this.Processor.DefaultFunc
-	}
+	var f = this.Processor.ParamFunc(t.String())
 	if f != nil {
 		return f(this, name, t)
 	}
@@ -99,27 +115,16 @@ func (this *Context) ParamString(key string) (string, error) {
 	if ok {
 		return routerResult, nil
 	}
-	var result, ok2 = this.HttpContext.Request.Form[key]
-	if ok2 && len(result) > 0 {
-		return result[0], nil
-	}
 	return "", ErrorParamNotExist.Error()
 }
 
 // ParamString 获取http参数字符串数组
 func (this *Context) ParamStringArray(key string) ([]string, error) {
-	var result, ok = this.HttpContext.Request.Form[key]
-	var routerResult, ok2 = this.Value(key)
-	if !ok && !ok2 {
-		return nil, ErrorParamNotExist.Error()
+	var result, ok = this.Values(key)
+	if ok {
+		return result, nil
 	}
-	if !ok {
-		result = []string{}
-	}
-	if ok2 {
-		result = append(result, routerResult)
-	}
-	return result, nil
+	return nil, ErrorParamNotExist.Error()
 }
 
 // ParamString 获取http参数字符串
@@ -158,6 +163,32 @@ func (this *Context) ParamFile(key string) (*FormFile, error) {
 		return &FormFile{file, header}, nil
 	}
 	return nil, err
+}
+
+// ParamString 获取http参数文件数组
+func (this *Context) ParamFiles(key string) ([]*FormFile, error) {
+	var r = this.HttpContext.Request
+	if r.MultipartForm == nil {
+		err := r.ParseMultipartForm(int64(this.Processor.Config.MaxRequestMemory))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if r.MultipartForm != nil && r.MultipartForm.File != nil {
+		if fhs := r.MultipartForm.File[key]; len(fhs) > 0 {
+			var files = make([]*FormFile, 0)
+			for _, fh := range fhs {
+				f, err := fh.Open()
+				if err == nil {
+					files = append(files, &FormFile{f, fh})
+				} else {
+					return nil, err
+				}
+			}
+			return files, nil
+		}
+	}
+	return nil, http.ErrMissingFile
 }
 
 // WriteString 将字符串写入http response流

@@ -16,13 +16,13 @@ func NewRootRouter() router.Router {
 	return r
 }
 
-// 创建控制器路由
+// 创建控制器路由,根据方法返回值确定该方法处理哪种形式的http请求
 //  instance:控制器对象
 //  控制器方法必须满足如下格式:
 //   func (this *SomeController) Method(param *ParamStruct) web.Result
 //   this:必须是控制器指针
 //   param:可以没有或者有多个,如果有则类型必须为结构体指针类型
-//   第一个返回结果必须能够赋值给web.Result接口
+//   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
 //  info:创建过程中用于输出信息的字符串
 //  return:执行成功则返回router.Router
 func NewControllerRouter(instance interface{}, info *string) router.Router {
@@ -75,13 +75,13 @@ func NewControllerRouter(instance interface{}, info *string) router.Router {
 	return controllerRouter
 }
 
-// 创建函数路由
+// 创建函数路由,根据方法返回值确定该方法处理哪种形式的http请求
 //  name:路由名称
 //  function:函数
 //  函数必须满足如下格式:
 //   func Method(param *ParamStruct) web.Result
 //   param:可以没有或者有多个,如果有则类型必须为结构体指针类型
-//   第一个返回结果必须能够赋值给web.Result接口
+//   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
 //  return:执行成功则返回router.Router
 func NewFuncRouter(name string, function interface{}) router.Router {
 	var mMd, err = AnalyzeMethod(name, reflect.ValueOf(function))
@@ -103,13 +103,13 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 	return mr
 }
 
-// 创建函数路由,可匹配无限层级
+// 创建函数路由,可匹配无限层级,根据方法返回值确定该方法处理哪种形式的http请求
 //  name:路由名称
 //  function:函数
 //  函数必须满足如下格式:
 //   func Method(param *ParamStruct) web.Result
 //   param:可以没有或者有多个,如果有则类型必须为结构体指针类型
-//   第一个返回结果必须能够赋值给web.Result接口
+//   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
 //  return:执行成功则返回router.Router
 func NewMutableFuncRouter(name string, function interface{}) router.Router {
 	var mMd, err = AnalyzeMethod(name, reflect.ValueOf(function))

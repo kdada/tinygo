@@ -12,15 +12,14 @@ const (
 	StatusCodeMovedTemporarily StatusCode = 302 //http临时转移
 	StatusCodeNotFound         StatusCode = 404 //http页面未找到
 	//框架内部状态码
-	StatusCodeRouterNotFound  StatusCode = iota + 10000 //路由未找到
-	StatusCodeParamNotEnough                            //http参数不足
+	StatusCodeParamNotEnough  StatusCode = iota + 10000 //http参数不足
 	StatusCodeParamNotCorrect                           //http参数不正确
 	StatusCodePageNotFound                              //页面未找到
 	//用户自定义状态码
 	StatusCodeUserDefined StatusCode = 1000000 //用户自定义状态码起始码
 )
 
-// 可用于所有http方法的返回结果
+// 可用于默认http方法(默认为Post)的返回结果
 type Result interface {
 	// WriteTo 将Result的内容写入writer
 	WriteTo(writer io.Writer) error
