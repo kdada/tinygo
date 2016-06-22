@@ -32,7 +32,10 @@ func NewWebApp(appDir string, configFile string, root router.Router) (*WebApp, e
 			return nil, err
 		}
 	}
-	var processor = NewHttpProcessor(root, config)
+	var processor, e = NewHttpProcessor(root, config)
+	if e != nil {
+		return nil, e
+	}
 	conn.SetDispatcher(processor)
 	return &WebApp{conn, processor}, nil
 }

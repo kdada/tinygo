@@ -11,44 +11,40 @@ import (
 
 // Http配置
 type HttpConfig struct {
-	Root              string   //应用根目录
-	App               string   //应用名称
-	Mode              string   //启动模式,可以为debug或release
-	Https             bool     //是否启用https,可选,默认为false
-	Port              int      //监听端口,可选,默认为80，https为true则默认为443
-	Cert              string   //证书(PEM)路径,如果启用了https则必填
-	PrivateKey        string   //私钥(PEM)路径,如果启用了https则必填
-	Home              string   //首页地址
-	Session           bool     //是否启用session
-	SessionType       string   //session类型,参考tinygo/session,默认为memory
-	SessionSource     string   //session源,参考tinygo/session,默认为空
-	SessionExpire     int      //session过期时间,单位为秒
-	CSRF              bool     //是否启用csrf
-	CSRFType          string   //session类型,参考tinygo/session,默认为memory
-	CSRFSource        string   //session源,参考tinygo/session,默认为空
-	CSRFExpire        int      //csrf token过期时间,单位为秒
-	Static            []string //静态文件目录,默认为"content",路径相对于应用根目录
-	View              string   //视图文件目录,默认为"views"
-	Precompile        bool     //是否预编译视图,默认为false
-	Api               string   //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
-	Favicon           string   //网站图标路径
-	Robots            string   //爬虫协议文件路径
-	Log               bool     //是否启用日志
-	LogType           string   //日志类型,可以为console或file
-	LogPath           string   //日志路径,日志类型为file的时候需要
-	LogAsync          bool     //异步日志,默认为false
-	LayoutConfigPath  string   //布局配置文件名
-	TemplateExt       string   //视图文件扩展名
-	TemplateName      string   //模板文件内模板名,用于返回部分视图时使用
-	SessionCookieName string   //Session Cookie名
-	CSRFCookieName    string   //CSRF Cookie 名
-	CSRFTokenName     string   //CSRF 表单名
-	MaxRequestMemory  int      //单次请求最大占用内存大小,默认32 MB
-	ViewConfig        struct { //视图配置,该配置中所有目录和文件路径都相对于HttpConfig.View参数指定的视图目录
-		LayoutMap     map[string]string //为布局文件定义别名,map[布局文件别名]布局文件路径
-		DefaultLayout string            //默认布局文件别名
-		LayoutSpec    map[string]string //特别指定目录或文件对应的布局文件,map[目录或文件路径]布局文件别名
-	}
+	Root              string      //应用根目录
+	App               string      //应用名称
+	Mode              string      //启动模式,可以为debug或release
+	Https             bool        //是否启用https,可选,默认为false
+	Port              int         //监听端口,可选,默认为80，https为true则默认为443
+	Cert              string      //证书(PEM)路径,如果启用了https则必填
+	PrivateKey        string      //私钥(PEM)路径,如果启用了https则必填
+	Home              string      //首页地址
+	Session           bool        //是否启用session
+	SessionType       string      //session类型,参考tinygo/session,默认为memory
+	SessionSource     string      //session源,参考tinygo/session,默认为空
+	SessionExpire     int         //session过期时间,单位为秒
+	CSRF              bool        //是否启用csrf
+	CSRFType          string      //session类型,参考tinygo/session,默认为memory
+	CSRFSource        string      //session源,参考tinygo/session,默认为空
+	CSRFExpire        int         //csrf token过期时间,单位为秒
+	Static            []string    //静态文件目录,默认为"content",路径相对于应用根目录
+	View              string      //视图文件目录,默认为"views"
+	Precompile        bool        //是否预编译视图,默认为false
+	Api               string      //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
+	Favicon           string      //网站图标路径
+	Robots            string      //爬虫协议文件路径
+	Log               bool        //是否启用日志
+	LogType           string      //日志类型,可以为console或file
+	LogPath           string      //日志路径,日志类型为file的时候需要
+	LogAsync          bool        //异步日志,默认为false
+	LayoutConfigPath  string      //布局配置文件名
+	TemplateExt       string      //视图文件扩展名
+	TemplateName      string      //模板文件内模板名,用于返回部分视图时使用
+	SessionCookieName string      //Session Cookie名
+	CSRFCookieName    string      //CSRF Cookie 名
+	CSRFTokenName     string      //CSRF 表单名
+	MaxRequestMemory  int         //单次请求最大占用内存大小,默认32 MB
+	ViewConfig        *ViewConfig //视图配置
 }
 
 // NewHttpConfig 创建默认的Http配置
@@ -87,11 +83,7 @@ func NewHttpConfig() *HttpConfig {
 		CSRFCookieName:    "xid",
 		CSRFTokenName:     "csrf",
 		MaxRequestMemory:  32 << 20,
-		ViewConfig: struct {
-			LayoutMap     map[string]string
-			DefaultLayout string
-			LayoutSpec    map[string]string
-		}{make(map[string]string), "", make(map[string]string)},
+		ViewConfig:        &ViewConfig{make(map[string]string), "", make(map[string]string)},
 	}
 }
 

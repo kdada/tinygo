@@ -2,6 +2,7 @@ package web
 
 import (
 	"net/http"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -23,11 +24,12 @@ type HttpProcessor struct {
 	CSRFContainer    session.SessionContainer //Csrf容器
 	Funcs            map[string]ParamTypeFunc //参数生成方法
 	DefaultFunc      ParamTypeFunc            //当Funcs中不存在指定类型的方法时,使用该方法处理
+	Templates        *ViewTemplates           //视图模板信息
 	Event            HttpProcessorEvent       //处理器事件
 }
 
 // NewHttpProcessor 创建Http处理器
-func NewHttpProcessor(root router.Router, config *HttpConfig) *HttpProcessor {
+func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, error) {
 	var processor = new(HttpProcessor)
 	processor.Root = root
 	processor.Config = config
@@ -57,11 +59,23 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) *HttpProcessor {
 		processor.CSRFContainer = container
 	}
 
+	//注册参数类型方法
 	processor.Funcs = make(map[string]ParamTypeFunc)
 	register(processor.Funcs)
 	processor.DefaultFunc = DefaultFunc
+	//创建视图模板信息
+	processor.Templates = NewViewTemplates(filepath.Join(config.Root, config.View), config.ViewConfig, config.TemplateName, config.TemplateExt)
+	if config.Precompile {
+		//预编译模板
+		var err = processor.Templates.CompileAll()
+		if err != nil {
+			return nil, err
+		}
+	}
+	//注册http事件
 	processor.Event = new(DefaultHttpProcessorEvent)
-	return processor
+
+	return processor, nil
 }
 
 // ParamFunc 根据类型全名获取指定的生成方法
@@ -140,13 +154,22 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 		}
 		var executor, ok = this.Root.Match(context)
 		if ok {
-			var result = executor.Execute()
+			var r = executor.Execute()
 			if this.Event != nil {
+				var result = []interface{}{}
+				if r != nil {
+					var rs, ok = r.([]interface{})
+					if ok {
+						result = rs
+					} else {
+						result = []interface{}{r}
+					}
+				}
 				this.Event.RequestFinish(this, context, result)
 			}
 		} else {
 			if this.Event != nil {
-				this.Event.RouterNotFound(this, context)
+				this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, "找不到指定路由")})
 			}
 		}
 	} else {
@@ -161,9 +184,7 @@ type HttpProcessorEvent interface {
 	// 每次出现一个新请求的时候触发
 	Request(processor *HttpProcessor, context *Context)
 	// 每次请求执行完成的时候触发
-	RequestFinish(processor *HttpProcessor, context *Context, result interface{})
-	// 路由未匹配时触发
-	RouterNotFound(processor *HttpProcessor, context *Context)
+	RequestFinish(processor *HttpProcessor, context *Context, result []interface{})
 	// 出现错误时触发,出现错误时context需要检查是否为nil后才能使用
 	Error(processor *HttpProcessor, context *Context, err error)
 }
@@ -178,19 +199,14 @@ func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context
 }
 
 // 每次请求执行完成的时候触发
-func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, context *Context, result interface{}) {
-	var rs, ok = result.([]interface{})
-	if ok && len(rs) > 0 {
-		var r, ok2 = rs[0].(Result)
-		if ok2 {
-			r.WriteTo(context.HttpContext.ResponseWriter)
+func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, context *Context, result []interface{}) {
+	if len(result) > 0 {
+		var r, ok = result[0].(Result)
+		if ok {
+			var err = r.WriteTo(context.HttpContext.ResponseWriter)
+			processor.Logger.Error(err)
 		}
 	}
-
-}
-
-// 路由未匹配时触发
-func (this *DefaultHttpProcessorEvent) RouterNotFound(processor *HttpProcessor, context *Context) {
 
 }
 
