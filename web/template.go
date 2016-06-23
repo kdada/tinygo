@@ -1,8 +1,11 @@
 package web
 
 import (
+	"html/template"
 	"io"
-	"text/template"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // 视图配置
@@ -15,10 +18,11 @@ type ViewConfig struct {
 // 视图模板信息
 type ViewTemplates struct {
 	templates   map[string]*template.Template
-	config      *ViewConfig //视图配置
-	viewPath    string      //视图文件目录
-	partialName string      //部分视图的模板名称
-	templateExt string      //模板的扩展名
+	config      *ViewConfig   //视图配置
+	viewPath    string        //视图文件目录
+	partialName string        //部分视图的模板名称
+	templateExt string        //模板的扩展名(小写)
+	funcMaps    []UserFuncMap //最后一次编译使用的方法信息
 }
 
 // NewViewTemplates 创建视图模板信息
@@ -32,21 +36,128 @@ func NewViewTemplates(path string, config *ViewConfig, partial string, ext strin
 		config,
 		path,
 		partial,
-		ext,
+		strings.ToLower(ext),
+		nil,
 	}
 }
 
 // CompileAll 编译所有视图
-func (this *ViewTemplates) CompileAll() error {
-	return nil
+func (this *ViewTemplates) CompileAll(funcMaps ...UserFuncMap) error {
+	this.funcMaps = funcMaps
+	var templates = make(map[string]*template.Template)
+	var err = filepath.Walk(this.viewPath, func(filePath string, fileInfo os.FileInfo, err error) error {
+		//遍历目录下的所有扩展名为templateExt的文件
+		if err == nil && fileInfo != nil && !fileInfo.IsDir() && strings.ToLower(filepath.Ext(fileInfo.Name())) == this.templateExt {
+			filePath = this.rel(filePath)
+			if !this.isLayout(filePath) {
+				var tmpl, err = this.compile(filePath, this.funcMaps)
+				if err == nil {
+					templates[filePath] = tmpl
+				} else {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err == nil {
+		this.templates = templates
+	}
+	return err
+}
+
+// rel 返回path相对于viewPath的路径
+func (this *ViewTemplates) rel(path string) string {
+	var rpath, err = filepath.Rel(this.viewPath, path)
+	if err != nil {
+		rpath = path
+	}
+	return NormalizePath(rpath)
+}
+
+// layout 获取指定文件的布局文件
+func (this *ViewTemplates) layout(path string) (string, bool) {
+	var layout, ok = this.config.LayoutSpec[path]
+	if !ok {
+		var dir = filepath.Dir(path)
+		layout, ok = this.config.LayoutSpec[dir]
+		if !ok {
+			layout = this.config.DefaultLayout
+		}
+	}
+	layout, ok = this.config.LayoutMap[layout]
+	if path == layout {
+		//避免循环布局
+		return "", false
+	}
+	return layout, ok
+}
+
+// isLayout 判断是否是布局文件
+func (this *ViewTemplates) isLayout(path string) bool {
+	for _, layoutPath := range this.config.LayoutMap {
+		if path == layoutPath {
+			return true
+		}
+	}
+	return false
+}
+
+// file 获取指定视图路径的文件路径
+func (this *ViewTemplates) file(path string) string {
+	return filepath.Join(this.viewPath, path)
+}
+
+// Compile 编译指定路径的视图
+func (this *ViewTemplates) compile(path string, funcMaps []UserFuncMap) (*template.Template, error) {
+	var pathSlice = []string{path}
+	var layout = path
+	var ok = true
+	//查找布局文件
+	for ok {
+		layout, ok = this.layout(layout)
+		if ok {
+			pathSlice = append(pathSlice, this.file(layout))
+		}
+	}
+	var tmplName = filepath.Base(layout)
+	var tmpl = template.New(tmplName)
+	//增加模版方法
+	for _, f := range funcMaps {
+		tmpl.Funcs(f.FuncMap())
+	}
+	return tmpl.ParseFiles(pathSlice...)
+}
+
+// template 返回指定路径的视图模板,如果模板不存在则编译该模板
+func (this *ViewTemplates) template(path string) (*template.Template, error) {
+	path = NormalizePath(path)
+	var tmpl, ok = this.templates[path]
+	if ok {
+		return tmpl, nil
+	}
+	path = this.file(path)
+	return this.compile(path, this.funcMaps)
 }
 
 // ExecView 执行视图
 func (this *ViewTemplates) ExecView(w io.Writer, path string, data interface{}) error {
-	return nil
+	var tmpl, err = this.template(path)
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(w, data)
 }
 
 // ExecPartialView 执行部分视图
 func (this *ViewTemplates) ExecPartialView(w io.Writer, path string, data interface{}) error {
-	return nil
+	var tmpl, err = this.template(path)
+	if err != nil {
+		return err
+	}
+	content := tmpl.Lookup(this.partialName)
+	if content != nil {
+		return content.Execute(w, data)
+	}
+	return ErrorInvalidPartialView.Format(path, this.partialName).Error()
 }

@@ -67,10 +67,17 @@ func (this *MethodMetadata) Call(param ParamFunc) []interface{} {
 	return result
 }
 
+// 全局结构体元数据信息
+var globalStructMetadata = make(map[string]*StructMetadata)
+
 // AnalyzeStruct 分析结构体字段(包括匿名字段)
 func AnalyzeStruct(s reflect.Type) (*StructMetadata, error) {
 	if !IsStructPtrType(s) {
 		return nil, ErrorNotStructPtr.Format(s.String()).Error()
+	}
+	var sm, ok = globalStructMetadata[s.String()]
+	if ok {
+		return sm, nil
 	}
 	var sMd = new(StructMetadata)
 	sMd.Name = s.Name()
@@ -82,6 +89,7 @@ func AnalyzeStruct(s reflect.Type) (*StructMetadata, error) {
 		fMd.Field = field
 		sMd.Fields = append(sMd.Fields, fMd)
 	})
+	globalStructMetadata[s.String()] = sMd
 	return sMd, nil
 }
 

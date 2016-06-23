@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/kdada/tinygo/connector"
 	"github.com/kdada/tinygo/router"
@@ -195,4 +196,119 @@ func (this *Context) ParamFiles(key string) ([]*FormFile, error) {
 func (this *Context) WriteString(value string) error {
 	var _, err = this.HttpContext.ResponseWriter.Write([]byte(value))
 	return err
+}
+
+// 返回文件类型结果
+func (this *Context) File(path string) *FileResult {
+	var result = new(FileResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.context = this
+	result.filePath = path
+	return result
+}
+
+// 返回Json类型结果
+func (this *Context) Json(data interface{}) *JsonResult {
+	var result = new(JsonResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.obj = data
+	return result
+}
+
+// 返回Xml类型结果
+func (this *Context) Xml(data interface{}) *XmlResult {
+	var result = new(XmlResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.obj = data
+	return result
+}
+
+// 返回Api类型结果
+func (this *Context) Api(data interface{}) HttpResult {
+	switch this.Processor.Config.Api {
+	case "json":
+		{
+			return this.Json(data)
+		}
+	case "xml":
+		{
+			return this.Xml(data)
+		}
+	default:
+		{
+			//检测请求头中是否包含指定的api格式
+			//优先检测json格式,如果存在指定格式则返回指定格式
+			//如果均不存在则返回json格式
+			var accept = this.HttpContext.Request.Header.Get("Accept")
+			if strings.Index(accept, "application/json") >= 0 {
+				return this.Json(data)
+			} else if strings.Index(accept, "application/xml") >= 0 {
+				return this.Json(data)
+			}
+		}
+	}
+	return this.Json(data)
+}
+
+// 返回NotFound类型结果
+func (this *Context) NotFound() *NotFoundResult {
+	var result = new(NotFoundResult)
+	result.Status = 404
+	result.ContentType = ""
+	result.context = this
+	return result
+}
+
+// 返回临时重定向类型结果
+func (this *Context) Redirect(url string) *RedirectResult {
+	var result = new(RedirectResult)
+	result.Status = 302
+	result.ContentType = ""
+	result.context = this
+	result.url = url
+	return result
+}
+
+// 返回永久重定向类型结果
+func (this *Context) RedirectPermanently(url string) *RedirectResult {
+	var result = new(RedirectResult)
+	result.Status = 301
+	result.ContentType = ""
+	result.context = this
+	result.url = url
+	return result
+}
+
+// 返回数据类型结果
+func (this *Context) Data(data []byte) *DataResult {
+	var result = new(DataResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.data = data
+	return result
+}
+
+// 返回视图类型结果
+func (this *Context) View(path string, data interface{}) *ViewResult {
+	var result = new(ViewResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.templates = this.Processor.Templates
+	result.path = path
+	result.data = data
+	return result
+}
+
+// 返回部分视图类型结果
+func (this *Context) PartialView(path string, data interface{}) *PartialViewResult {
+	var result = new(PartialViewResult)
+	result.Status = 200
+	result.ContentType = ""
+	result.templates = this.Processor.Templates
+	result.path = path
+	result.data = data
+	return result
 }

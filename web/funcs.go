@@ -8,8 +8,29 @@ import (
 
 // ParamContext 处理context类型
 func ParamContext(context *Context, name string, t reflect.Type) interface{} {
-	if t == reflect.TypeOf(context) {
-		return context
+	return context
+}
+
+// ParamFormFile 处理FormFile类型
+func ParamFormFile(context *Context, name string, t reflect.Type) interface{} {
+	if name == "" {
+		return nil
+	}
+	var f, err = context.ParamFile(name)
+	if err == nil {
+		return f
+	}
+	return nil
+}
+
+// ParamFormFiles 处理FormFile数组类型
+func ParamFormFiles(context *Context, name string, t reflect.Type) interface{} {
+	if name == "" {
+		return nil
+	}
+	var fs, err = context.ParamFiles(name)
+	if err == nil {
+		return fs
 	}
 	return nil
 }
@@ -124,5 +145,7 @@ func DefaultFunc(context *Context, name string, t reflect.Type) interface{} {
 // 注册参数处理方法
 func register(funcs map[string]ParamTypeFunc) {
 	funcs[reflect.TypeOf((*Context)(nil)).String()] = ParamContext
+	funcs[reflect.TypeOf((*FormFile)(nil)).String()] = ParamFormFile
+	funcs[reflect.TypeOf(([]*FormFile)(nil)).String()] = ParamFormFiles
 	funcs[reflect.TypeOf(time.Now()).String()] = ParamContext
 }

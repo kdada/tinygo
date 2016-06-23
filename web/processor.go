@@ -67,7 +67,7 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	processor.Templates = NewViewTemplates(filepath.Join(config.Root, config.View), config.ViewConfig, config.TemplateName, config.TemplateExt)
 	if config.Precompile {
 		//预编译模板
-		var err = processor.Templates.CompileAll()
+		var err = processor.Templates.CompileAll(new(CommonFunMap))
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +169,7 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 			}
 		} else {
 			if this.Event != nil {
-				this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, "找不到指定路由")})
+				this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, ErrorRouterNotFound.Format(context.HttpContext.Request.URL.String()).String())})
 			}
 		}
 	} else {
@@ -177,40 +177,4 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 			this.Event.Error(this, context, err)
 		}
 	}
-}
-
-// HttpProcessor事件接口
-type HttpProcessorEvent interface {
-	// 每次出现一个新请求的时候触发
-	Request(processor *HttpProcessor, context *Context)
-	// 每次请求执行完成的时候触发
-	RequestFinish(processor *HttpProcessor, context *Context, result []interface{})
-	// 出现错误时触发,出现错误时context需要检查是否为nil后才能使用
-	Error(processor *HttpProcessor, context *Context, err error)
-}
-
-// 默认事件
-type DefaultHttpProcessorEvent struct {
-}
-
-// 每次出现一个新请求的时候触发
-func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context *Context) {
-
-}
-
-// 每次请求执行完成的时候触发
-func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, context *Context, result []interface{}) {
-	if len(result) > 0 {
-		var r, ok = result[0].(Result)
-		if ok {
-			var err = r.WriteTo(context.HttpContext.ResponseWriter)
-			processor.Logger.Error(err)
-		}
-	}
-
-}
-
-// 出现错误时触发
-func (this *DefaultHttpProcessorEvent) Error(processor *HttpProcessor, context *Context, err error) {
-
 }
