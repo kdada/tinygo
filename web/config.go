@@ -18,7 +18,7 @@ type HttpConfig struct {
 	Port              int         //监听端口,可选,默认为80，https为true则默认为443
 	Cert              string      //!!证书(PEM)路径,如果启用了https则必填
 	PrivateKey        string      //!!私钥(PEM)路径,如果启用了https则必填
-	Home              string      //!!首页地址
+	Home              string      //首页地址
 	Session           bool        //是否启用session
 	SessionType       string      //session类型,参考tinygo/session,默认为memory
 	SessionSource     string      //session源,参考tinygo/session,默认为空
@@ -27,12 +27,12 @@ type HttpConfig struct {
 	CSRFType          string      //session类型,参考tinygo/session,默认为memory
 	CSRFSource        string      //session源,参考tinygo/session,默认为空
 	CSRFExpire        int         //csrf token过期时间,单位为秒
-	Static            []string    //!!静态文件目录,默认为"content",路径相对于应用根目录
+	Static            []string    //静态文件目录,默认为"content",路径相对于应用根目录
 	View              string      //视图文件目录,默认为"views"
 	Precompile        bool        //是否预编译视图,默认为false
 	Api               string      //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
-	Favicon           string      //!!网站图标路径
-	Robots            string      //!!爬虫协议文件路径
+	Favicon           string      //网站图标路径
+	Robots            string      //爬虫协议文件路径
 	Log               bool        //是否启用日志
 	LogType           string      //日志类型,可以为console或file
 	LogPath           string      //日志路径,日志类型为file的时候需要

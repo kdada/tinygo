@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -202,7 +203,7 @@ func (this *Context) WriteString(value string) error {
 func (this *Context) File(path string) *FileResult {
 	var result = new(FileResult)
 	result.Status = 200
-	result.ContentType = ""
+	result.ContentType = ContentType(filepath.Ext(path))
 	result.context = this
 	result.filePath = path
 	return result
@@ -310,5 +311,13 @@ func (this *Context) PartialView(path string, data interface{}) *PartialViewResu
 	result.templates = this.Processor.Templates
 	result.path = path
 	result.data = data
+	return result
+}
+
+// 重新分发,将当前请求交给另一个path处理
+func (this *Context) Redispatch(path string) *UserDefinedResult {
+	var result = new(UserDefinedResult)
+	result.Status = StatusCodeRedispatch
+	result.Msg = path
 	return result
 }

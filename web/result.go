@@ -88,9 +88,9 @@ type FileResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *FileResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
-	if err != nil {
-		return err
+	var r, ok = writer.(http.ResponseWriter)
+	if !ok {
+		return ErrorInvalidWriter.Error()
 	}
 	http.ServeFile(r, this.context.HttpContext.Request, this.filePath)
 	return nil
@@ -146,9 +146,9 @@ type NotFoundResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *NotFoundResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
-	if err != nil {
-		return err
+	var r, ok = writer.(http.ResponseWriter)
+	if !ok {
+		return ErrorInvalidWriter.Error()
 	}
 	http.NotFound(r, this.context.HttpContext.Request)
 	return nil
@@ -163,9 +163,9 @@ type RedirectResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *RedirectResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
-	if err != nil {
-		return err
+	var r, ok = writer.(http.ResponseWriter)
+	if !ok {
+		return ErrorInvalidWriter.Error()
 	}
 	http.Redirect(r, this.context.HttpContext.Request, this.url, int(this.Status))
 	return nil

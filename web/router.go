@@ -7,13 +7,20 @@ import (
 	"github.com/kdada/tinygo/router"
 )
 
-// 创建适用于Web App的根路由
-func NewRootRouter() router.Router {
-	var r, err = router.NewRouter("base", "", nil)
+// 创建空间路由
+//  name:路由名称
+//  return:执行成功则返回router.Router
+func NewSpaceRouter(name string) router.Router {
+	var r, err = router.NewRouter("base", name, name)
 	if err != nil {
 		panic(err)
 	}
 	return r
+}
+
+// 创建适用于Web App的根路由
+func NewRootRouter() router.Router {
+	return NewSpaceRouter("")
 }
 
 // 创建控制器路由,根据方法返回值确定该方法处理哪种形式的http请求
@@ -57,15 +64,9 @@ func NewControllerRouter(instance interface{}, info *string) router.Router {
 			methods = append(methods, mMd)
 		}
 	})
-	var controllerRouter, err = router.NewRouter("base", instanceType.Name(), nil)
-	if err != nil {
-		panic(err)
-	}
+	var controllerRouter = NewSpaceRouter(instanceType.Name())
 	for _, m := range methods {
-		var mr, err2 = router.NewRouter("base", instanceType.Name(), nil)
-		if err2 != nil {
-			panic(err2)
-		}
+		var mr = NewSpaceRouter(instanceType.Name())
 		var excutor = NewAdvancedExecutor(start, m, end)
 		mr.AddChildren(HttpResultRouter(m.Return[0].Name(), func() router.RouterExcutor {
 			return excutor
@@ -88,10 +89,7 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 	if err != nil {
 		panic(err)
 	}
-	var mr, err2 = router.NewRouter("base", name, name)
-	if err2 != nil {
-		panic(err2)
-	}
+	var mr = NewSpaceRouter(name)
 	var excutor = NewAdvancedExecutor(nil, mMd, nil)
 	var mName = ""
 	if CheckResult(mMd) == nil {
@@ -103,7 +101,7 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 	return mr
 }
 
-// 创建函数路由,可匹配无限层级,根据方法返回值确定该方法处理哪种形式的http请求
+// 创建函数路由,可匹配无限层级和任意http方法的请求
 //  name:路由名称
 //  function:函数
 //  函数必须满足如下格式:
@@ -127,15 +125,33 @@ func NewMutableFuncRouter(name string, function interface{}) router.Router {
 	return mr
 }
 
-// 创建空间路由
+// 创建文件路由,只能匹配Get类型的文件请求,返回指定的文件
 //  name:路由名称
+//  path:文件路径
 //  return:执行成功则返回router.Router
-func NewSpaceRouter(name string) router.Router {
-	var r, err = router.NewRouter("base", name, name)
+func NewFileRouter(name string, path string) router.Router {
+	var mr = NewSpaceRouter(name)
+	var excutor = NewFileExecutor(path)
+	mr.AddChildren(HttpResultRouter("Get", func() router.RouterExcutor {
+		return excutor
+	}))
+	return mr
+}
+
+// 创建静态文件路由,只能匹配Get类型的文件请求,返回指定的文件
+//  name:路由名称
+//  path:文件目录路径
+//  return:执行成功则返回router.Router
+func NewStaticRouter(name string, path string) router.Router {
+	var mr, err = router.NewRouter("unlimited", name, name)
 	if err != nil {
 		panic(err)
 	}
-	return r
+	var excutor = NewStaticExecutor(path)
+	mr.SetRouterExcutorGenerator(func() router.RouterExcutor {
+		return excutor
+	})
+	return mr
 }
 
 // 检查元数据的第一个返回值是否符合web.Result接口

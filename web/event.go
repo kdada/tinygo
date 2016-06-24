@@ -1,5 +1,9 @@
 package web
 
+import (
+	"strings"
+)
+
 // HttpProcessor事件接口
 type HttpProcessorEvent interface {
 	// 每次出现一个新请求的时候触发
@@ -22,13 +26,22 @@ func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context
 // 每次请求执行完成的时候触发
 func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, context *Context, result []interface{}) {
 	if len(result) > 0 {
-		var r, ok = result[0].(Result)
-		if ok {
-			var err = r.WriteTo(context.HttpContext.ResponseWriter)
-			if err != nil {
-				processor.Logger.Error(err)
+		var r, ok = result[0].(HttpResult)
+		if ok && r.Code() == StatusCodeRedispatch {
+			//StatusCodeRedispatch的返回结果需要进行重新分发
+			processor.Dispatch(strings.Split(r.Message(), "/"), context.HttpContext)
+			return
+		} else {
+			//处理其他情况
+			var w, ok2 = result[0].(Result)
+			if ok2 {
+				var err = w.WriteTo(context.HttpContext.ResponseWriter)
+				if err != nil {
+					processor.Logger.Error(err)
+				}
 			}
 		}
+
 	}
 
 }

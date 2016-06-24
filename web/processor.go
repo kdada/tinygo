@@ -74,7 +74,29 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	}
 	//注册http事件
 	processor.Event = new(DefaultHttpProcessorEvent)
-
+	//注册静态文件路由
+	if processor.Config.Favicon != "" {
+		processor.Root.AddChild(NewFileRouter("favicon.ico", processor.Config.Favicon))
+	}
+	if processor.Config.Robots != "" {
+		processor.Root.AddChild(NewFileRouter("robots.txt", processor.Config.Robots))
+	}
+	if len(processor.Config.Static) > 0 {
+		for _, s := range processor.Config.Static {
+			processor.Root.AddChild(NewStaticRouter(filepath.Base(s), s))
+		}
+	}
+	//创建首页跳转
+	if processor.Config.Home != "" {
+		var r = NewSpaceRouter("Get")
+		var excutor = NewSimpleExecutor(func(r *Context) interface{} {
+			return r.Redispatch(r.Processor.Config.Home)
+		})
+		r.SetRouterExcutorGenerator(func() router.RouterExcutor {
+			return excutor
+		})
+		processor.Root.AddChild(r)
+	}
 	return processor, nil
 }
 
