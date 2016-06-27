@@ -64,17 +64,13 @@ func (this *SimpleExecutor) Execute() interface{} {
 // 高级执行器
 type AdvancedExecutor struct {
 	CommonExecutor
-	StartMethod *MethodMetadata //启动方法
-	Method      *MethodMetadata //执行方法
-	EndMethod   *MethodMetadata //结束方法
+	Method *MethodMetadata //执行方法
 }
 
 // NewAdvancedExecutor 创建高级执行器
-func NewAdvancedExecutor(start, method, end *MethodMetadata) *AdvancedExecutor {
+func NewAdvancedExecutor(method *MethodMetadata) *AdvancedExecutor {
 	var ae = new(AdvancedExecutor)
-	ae.StartMethod = start
 	ae.Method = method
-	ae.EndMethod = end
 	return ae
 }
 
@@ -85,16 +81,8 @@ func (this *AdvancedExecutor) Execute() interface{} {
 		context.End = this.End
 		// 执行前置过滤器
 		if this.ExecutePreFilters() {
-			//执行Start方法
-			if this.StartMethod != nil {
-				this.StartMethod.Call(context.Param)
-			}
 			//执行处理方法
 			var result = this.Method.Call(context.Param)
-			//执行End方法
-			if this.EndMethod != nil {
-				this.EndMethod.Call(context.Param)
-			}
 			//执行后置过滤器
 			if this.ExecutePostFilters(result) {
 				return result

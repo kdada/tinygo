@@ -37,37 +37,30 @@ func NewControllerRouter(instance interface{}, info *string) router.Router {
 	if IsStructPtrType(instanceType) {
 		panic(ErrorNotStructPtr.Format(instanceType.String()).Error())
 	}
-	var start *MethodMetadata = nil
-	var end *MethodMetadata = nil
 	var methods = make([]*MethodMetadata, 0)
 	//遍历控制器方法
 	ForeachMethod(instanceType, func(method reflect.Method) {
 		var mMd, err = AnalyzeControllerMethod(method)
-		if err != nil && info != nil {
-			*info += err.Error() + "\n"
+		if err != nil {
+			if info != nil {
+				*info += err.Error() + "\n"
+			}
 			return
 		}
-		// Start 和 End 方法忽略返回值检查,其他方法中符合要求的方法才能作为接口使用
-		if (mMd.Name != "Start") && (mMd.Name != "End") {
-			err = CheckResult(mMd)
-			if err != nil && info != nil {
+		// 对返回值进行检查,符合要求的方法才能作为接口使用
+		err = CheckResult(mMd)
+		if err != nil {
+			if info != nil {
 				*info += err.Error() + "\n"
-				return
 			}
+			return
 		}
-		switch mMd.Name {
-		case "Start":
-			start = mMd
-		case "End":
-			end = mMd
-		default:
-			methods = append(methods, mMd)
-		}
+		methods = append(methods, mMd)
 	})
 	var controllerRouter = NewSpaceRouter(instanceType.Name())
 	for _, m := range methods {
 		var mr = NewSpaceRouter(instanceType.Name())
-		var excutor = NewAdvancedExecutor(start, m, end)
+		var excutor = NewAdvancedExecutor(m)
 		mr.AddChildren(HttpResultRouter(m.Return[0].Name(), func() router.RouterExcutor {
 			return excutor
 		}))
@@ -90,7 +83,7 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 		panic(err)
 	}
 	var mr = NewSpaceRouter(name)
-	var excutor = NewAdvancedExecutor(nil, mMd, nil)
+	var excutor = NewAdvancedExecutor(mMd)
 	var mName = ""
 	if CheckResult(mMd) == nil {
 		mName = mMd.Return[0].String()
@@ -118,7 +111,7 @@ func NewMutableFuncRouter(name string, function interface{}) router.Router {
 	if err2 != nil {
 		panic(err2)
 	}
-	var excutor = NewAdvancedExecutor(nil, mMd, nil)
+	var excutor = NewAdvancedExecutor(mMd)
 	mr.SetRouterExcutorGenerator(func() router.RouterExcutor {
 		return excutor
 	})

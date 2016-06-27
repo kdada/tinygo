@@ -13,20 +13,22 @@ import (
 type HttpConfig struct {
 	Root              string      //应用根目录
 	App               string      //应用名称
-	Mode              string      //!!启动模式,可以为debug或release
 	Https             bool        //是否启用https,可选,默认为false
 	Port              int         //监听端口,可选,默认为80，https为true则默认为443
-	Cert              string      //!!证书(PEM)路径,如果启用了https则必填
-	PrivateKey        string      //!!私钥(PEM)路径,如果启用了https则必填
+	Cert              string      //证书(PEM)路径,如果启用了https则必填
+	PrivateKey        string      //私钥(PEM)路径,如果启用了https则必填
 	Home              string      //首页地址
 	Session           bool        //是否启用session
 	SessionType       string      //session类型,参考tinygo/session,默认为memory
 	SessionSource     string      //session源,参考tinygo/session,默认为空
 	SessionExpire     int         //session过期时间,单位为秒
+	SessionCookieName string      //Session Cookie名
 	CSRF              bool        //是否启用csrf
 	CSRFType          string      //session类型,参考tinygo/session,默认为memory
 	CSRFSource        string      //session源,参考tinygo/session,默认为空
 	CSRFExpire        int         //csrf token过期时间,单位为秒
+	CSRFCookieName    string      //csrf Cookie 名
+	CSRFTokenName     string      //csrf 表单名
 	Static            []string    //静态文件目录,默认为"content",路径相对于应用根目录
 	View              string      //视图文件目录,默认为"views"
 	Precompile        bool        //是否预编译视图,默认为false
@@ -40,9 +42,6 @@ type HttpConfig struct {
 	LayoutConfigPath  string      //布局配置文件名
 	TemplateExt       string      //视图文件扩展名
 	TemplateName      string      //模板文件内部分模板名,用于返回部分视图时使用
-	SessionCookieName string      //Session Cookie名
-	CSRFCookieName    string      //CSRF Cookie 名
-	CSRFTokenName     string      //!!CSRF 表单名
 	MaxRequestMemory  int         //单次请求最大占用内存大小,默认32 MB
 	ViewConfig        *ViewConfig //视图配置
 }
@@ -52,7 +51,6 @@ func NewHttpConfig() *HttpConfig {
 	// Http配置
 	return &HttpConfig{
 		App:               "app",
-		Mode:              "debug",
 		Https:             false,
 		Port:              80,
 		Cert:              "",
@@ -105,10 +103,6 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 	strValue, err = global.String("App")
 	if err == nil {
 		httpCfg.App = strValue
-	}
-	strValue, err = global.String("Mode")
-	if err == nil {
-		httpCfg.Mode = strValue
 	}
 	boolValue, err = global.Bool("Https")
 	if err == nil {

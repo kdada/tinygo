@@ -157,7 +157,7 @@ func (this *HttpProcessor) ResolveSession(context *Context) {
 			this.addCookie(context, this.createCookie(this.Config.CSRFCookieName, ss.SessionId()))
 		}
 		if ok {
-			context.Csrf = ss
+			context.CSRF = ss
 		}
 	}
 }

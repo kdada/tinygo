@@ -35,9 +35,9 @@ func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, c
 			//处理其他情况
 			var w, ok2 = result[0].(Result)
 			if ok2 {
-				var err = w.WriteTo(context.HttpContext.ResponseWriter)
+				var err = context.WriteResult(w)
 				if err != nil {
-					processor.Logger.Error(err)
+					this.Error(processor, context, err)
 				}
 			}
 		}
@@ -48,5 +48,5 @@ func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, c
 
 // 出现错误时触发
 func (this *DefaultHttpProcessorEvent) Error(processor *HttpProcessor, context *Context, err error) {
-
+	processor.Logger.Error(err)
 }

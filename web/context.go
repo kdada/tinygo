@@ -10,11 +10,15 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kdada/tinygo/connector"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
 )
+
+// 视图数据类型
+type ViewData map[string]interface{}
 
 // 表单文件
 type FormFile struct {
@@ -60,7 +64,7 @@ type Context struct {
 	router.BaseContext
 	HttpContext *connector.HttpContext //http上下文
 	Session     session.Session        //http会话
-	Csrf        session.Session        //csrf会话
+	CSRF        session.Session        //csrf会话
 	End         router.Router          //处理当前上下文的路由
 	Processor   *HttpProcessor         //生成当前上下文的处理器
 }
@@ -199,6 +203,11 @@ func (this *Context) WriteString(value string) error {
 	return err
 }
 
+// WriteResult 将Result写入http response流
+func (this *Context) WriteResult(result Result) error {
+	return result.WriteTo(this.HttpContext.ResponseWriter)
+}
+
 // 返回文件类型结果
 func (this *Context) File(path string) *FileResult {
 	var result = new(FileResult)
@@ -293,25 +302,78 @@ func (this *Context) Data(data []byte) *DataResult {
 }
 
 // 返回视图类型结果
-func (this *Context) View(path string, data interface{}) *ViewResult {
+func (this *Context) View(path string, data ...interface{}) *ViewResult {
 	var result = new(ViewResult)
 	result.Status = 200
 	result.ContentType = ""
 	result.templates = this.Processor.Templates
 	result.path = path
-	result.data = data
+	data = append(data, this.commonViewData())
+	result.data = this.integrate(data...)
 	return result
 }
 
 // 返回部分视图类型结果
-func (this *Context) PartialView(path string, data interface{}) *PartialViewResult {
+func (this *Context) PartialView(path string, data ...interface{}) *PartialViewResult {
 	var result = new(PartialViewResult)
 	result.Status = 200
 	result.ContentType = ""
 	result.templates = this.Processor.Templates
 	result.path = path
-	result.data = data
+	data = append(data, this.commonViewData())
+	result.data = this.integrate(data...)
 	return result
+}
+
+// commonViewData 生成公共视图数据
+func (this *Context) commonViewData() ViewData {
+	var vd = ViewData{}
+	if this.Session != nil {
+		vd["SESSION"] = NewTemplateSession(this.Session)
+	}
+	if this.CSRF != nil {
+		vd["CSRF"] = NewTemplateCSRF(this.CSRF, this.Processor.Config.CSRFTokenName)
+	}
+	return vd
+}
+
+// integrate 将data的数据整合为一个ViewData
+func (this *Context) integrate(data ...interface{}) ViewData {
+	var result = make(ViewData)
+	for _, output := range data {
+		var outputType = reflect.TypeOf(output)
+		if outputType.Kind() == reflect.Map {
+			//添加Map
+			var dataMap, ok = output.(ViewData)
+			if ok {
+				for k, v := range dataMap {
+					result[k] = v
+				}
+			}
+		} else if IsStructPtrType(outputType) {
+			this.mapTo(reflect.ValueOf(output).Elem(), result)
+		}
+	}
+	return result
+}
+
+// mapTo 将value结构体转换到一个ViewData中,value必须是结构体
+func (this *Context) mapTo(value reflect.Value, data ViewData) {
+	if value.Kind() == reflect.Struct {
+		for i := 0; i < value.NumField(); i++ {
+			var fieldValue = value.Field(i)
+			if fieldValue.CanInterface() {
+				var fieldType = value.Type().Field(i)
+				if fieldType.Anonymous {
+					//匿名组合字段,进行递归解析
+					this.mapTo(fieldValue, data)
+				} else {
+					//非匿名字段
+					data[fieldType.Name] = fieldValue.Interface()
+				}
+			}
+		}
+	}
 }
 
 // 重新分发,将当前请求交给另一个path处理
@@ -320,4 +382,19 @@ func (this *Context) Redispatch(path string) *UserDefinedResult {
 	result.Status = StatusCodeRedispatch
 	result.Msg = path
 	return result
+}
+
+// ValidateCSRF 验证表单请求中是否存在csrf的token并且该token有效,验证后token立即失效
+func (this *Context) ValidateCSRF() bool {
+	if this.CSRF != nil {
+		var token, err = this.ParamString(this.Processor.Config.CSRFTokenName)
+		if err == nil {
+			var t, ok = this.CSRF.Int(token)
+			if ok {
+				this.CSRF.Delete(token)
+				return int(time.Now().Unix())-t <= this.Processor.Config.CSRFExpire
+			}
+		}
+	}
+	return false
 }

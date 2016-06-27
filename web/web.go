@@ -25,12 +25,12 @@ func NewWebApp(appDir string, configFile string, root router.Router) (*WebApp, e
 	}
 	var conn connector.Connector
 	if config.Https {
-		panic("https not defined")
+		conn, err = connector.NewConnector("https", ":"+strconv.Itoa(config.Port)+";Cert="+config.Cert+";Key="+config.PrivateKey)
 	} else {
 		conn, err = connector.NewConnector("http", ":"+strconv.Itoa(config.Port))
-		if err != nil {
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, err
 	}
 	var processor, e = NewHttpProcessor(root, config)
 	if e != nil {

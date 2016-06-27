@@ -3,6 +3,9 @@ package web
 import (
 	"html/template"
 	"time"
+
+	"github.com/kdada/tinygo/session"
+	"github.com/kdada/tinygo/util"
 )
 
 // 模版方法映射接口
@@ -111,4 +114,73 @@ func (this *CommonFunMap) FuncMap() template.FuncMap {
 			return t.Format("2006-01-02")
 		},
 	}
+}
+
+// 模板会话信息
+type TemplateSession struct {
+	sess session.Session //当前会话
+}
+
+// NewTemplateSession 创建一个模板Session
+func NewTemplateSession(sess session.Session) *TemplateSession {
+	return &TemplateSession{sess}
+}
+
+// String 获取字符串
+func (this *TemplateSession) String(key string) (string, error) {
+	var v, ok = this.sess.String(key)
+	if ok {
+		return v, nil
+	}
+	return "", ErrorInvalidKey.Format(key).Error()
+}
+
+//  Int 获取整数值
+func (this *TemplateSession) Int(key string) (int, error) {
+	var v, ok = this.sess.Int(key)
+	if ok {
+		return v, nil
+	}
+	return 0, ErrorInvalidKey.Format(key).Error()
+}
+
+// Bool 获取bool值
+func (this *TemplateSession) Bool(key string) (bool, error) {
+	var v, ok = this.sess.Bool(key)
+	if ok {
+		return v, nil
+	}
+	return false, ErrorInvalidKey.Format(key).Error()
+}
+
+// Float 获取浮点值
+func (this *TemplateSession) Float(key string) (float64, error) {
+	var v, ok = this.sess.Float(key)
+	if ok {
+		return v, nil
+	}
+	return 0.0, ErrorInvalidKey.Format(key).Error()
+}
+
+// 模板CSRF信息
+type TemplateCSRF struct {
+	sess session.Session //当前CSRF会话
+	name string          //token字段名称
+}
+
+// NewTemplateCSRF 创建一个模板CSRF
+func NewTemplateCSRF(sess session.Session, fieldName string) *TemplateCSRF {
+	return &TemplateCSRF{sess, fieldName}
+}
+
+// Token 生成一个CSRF认证字符串
+func (this *TemplateCSRF) Token() template.HTML {
+	var token = util.NewUUID().Hex()
+	this.sess.SetInt(token, int(time.Now().Unix())) //记录生成时间(秒)
+	return template.HTML(token)
+}
+
+// Field 生成一个包含CSRF的隐藏域
+func (this *TemplateCSRF) Field() template.HTML {
+	return template.HTML(`<input type="hidden" name="` + this.name + `" value="` + string(this.Token()) + `" >`)
 }

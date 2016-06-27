@@ -29,4 +29,5 @@ const (
 	ErrorInvalidKind             Error = "ErrorInvalidKind(L10010):无效的连接类型(%s)"
 	ErrorFailToStop              Error = "ErrorFailToStop(L10020):无法停止连接器(%s)"
 	ErrorInvalidDispatcher       Error = "ErrorInvalidDispatcher(L10030):无效的Dispatcher,无法启动Connector(%s)"
+	ErrorParamNotFound           Error = "ErrorParamNotFound(L10100):source中没有%s,无法创建https连接器"
 )
