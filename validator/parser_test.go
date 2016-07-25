@@ -6,7 +6,7 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	var src = `len <= 9090 && (isok()||isNum(+222.3332432,-435345,'ae53你好24asfd\\''asdee'))&&/asdasd//2323[]{}''/`
+	var src = `len <= 9090 && (isok() || sad() && (isNum(+222.3332432,-435345,'ae53你好24asfd\\''asdee')&&(iscc()||ssde())))||/asdasd//2323[]{}''/`
 	var l = NewLexer(src)
 	var p = NewParser(l)
 	var err = p.Parse()
@@ -22,7 +22,7 @@ type Stringer interface {
 }
 
 func (this *BaseNode) String() string {
-	return string(this.kind)
+	return fmt.Sprint(this.kind)
 }
 func (this *FuncNode) String() string {
 	var f = this.name

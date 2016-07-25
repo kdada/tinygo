@@ -116,7 +116,7 @@ func (this *Lexer) Prefetch() (*Token, error) {
 				if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
 					return this.id()
 				}
-				return nil, ErrorInvalidChar.Format(string(c)).Error()
+				return nil, ErrorInvalidChar.Format(this.Pos, string(c)).Error()
 			}
 		}
 	}
@@ -136,7 +136,7 @@ func (this *Lexer) and() (*Token, error) {
 	if this.Pos+1 < len(this.Data) && this.Data[this.Pos+1] == '&' {
 		return NewToken(TokenKindAnd, this.Pos, 2, "&&"), nil
 	}
-	return nil, ErrorInvalidLogicalAnd.Error()
+	return nil, ErrorInvalidLogicalAnd.Format(this.Pos).Error()
 }
 
 // or 用于识别||
@@ -144,7 +144,7 @@ func (this *Lexer) or() (*Token, error) {
 	if this.Pos+1 < len(this.Data) && this.Data[this.Pos+1] == '|' {
 		return NewToken(TokenKindOr, this.Pos, 2, "||"), nil
 	}
-	return nil, ErrorInvalidLogicalOr.Error()
+	return nil, ErrorInvalidLogicalOr.Format(this.Pos).Error()
 }
 
 // regexp 用于识别正则表达式
@@ -168,7 +168,7 @@ func (this *Lexer) relop() (*Token, error) {
 		length = 2
 	}
 	if length == 1 && (fc == '!' || fc == '=') {
-		return nil, ErrorInvalidRelop.Error()
+		return nil, ErrorInvalidRelop.Format(this.Pos).Error()
 	}
 	return NewToken(TokenKindRelop, this.Pos, length, string(this.Data[this.Pos:this.Pos+length])), nil
 }
@@ -186,10 +186,10 @@ func (this *Lexer) number() (*Token, error) {
 		var b = this.Data[i]
 		if b == '.' {
 			if i == this.Pos+1 && !startWithNum {
-				return nil, ErrorInvalidNumberFormat.Error()
+				return nil, ErrorInvalidNumberFormat.Format(this.Pos).Error()
 			}
 			if dotPos > 0 {
-				return nil, ErrorInvalidFloat.Error()
+				return nil, ErrorInvalidFloat.Format(this.Pos).Error()
 			}
 			dotPos = i
 			continue
@@ -200,7 +200,7 @@ func (this *Lexer) number() (*Token, error) {
 	}
 	var length = i - this.Pos
 	if length <= 1 && !startWithNum {
-		return nil, ErrorInvalidNumberFormat.Error()
+		return nil, ErrorInvalidNumberFormat.Format(this.Pos).Error()
 	}
 	var s = string(this.Data[this.Pos : this.Pos+length])
 	if dotPos >= 0 {
@@ -240,7 +240,7 @@ func (this *Lexer) unescaped(startPos int, end rune) (string, int, error) {
 		}
 		str = append(str, b)
 	}
-	return "", startPos, ErrorUnmatchEnding.Format(end).Error()
+	return "", startPos, ErrorUnmatchEnding.Format(startPos, end).Error()
 }
 
 // id 用于识别标识符

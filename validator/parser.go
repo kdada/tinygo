@@ -54,12 +54,19 @@ func (this *Parser) Parse() (e error) {
 		return err
 	}
 	if t.Kind != TokenKindEOF {
-		return ErrorInvalidExpr.Format(this.Lexer.Token(t)).Error()
+		return ErrorInvalidExpr.Format(t.Pos, this.Lexer.Token(t)).Error()
 	}
 	for this.Tree.Parent() != nil {
 		this.Tree = this.Tree.Parent()
 	}
 	return nil
+}
+
+// up 将节点指针指向当前节点的父节点
+func (this *Parser) up() {
+	if this.Tree.Parent() != nil {
+		this.Tree = this.Tree.Parent()
+	}
 }
 
 // addSpaceNode 为当前节点添加空间节点
@@ -110,6 +117,13 @@ func (this *Parser) addFuncNode(name string) {
 	this.Tree = node
 }
 
+// addRegFuncNode 为当前节点添加正则函数节点
+func (this *Parser) addRegFuncNode(exp string) {
+	var node = NewRegFuncNode(exp)
+	this.Tree.AddChild(node)
+	this.Tree = node
+}
+
 // addParam 给当前函数节点添加参数
 func (this *Parser) addParam(t *Token) {
 	var node = this.Tree.(*FuncNode)
@@ -130,6 +144,7 @@ func (this *Parser) expr() {
 		this.addSpaceNode()
 		this.expr()
 		this.match(TokenKindRP)
+		this.up()
 		this.extend()
 		return
 	}
@@ -138,7 +153,7 @@ func (this *Parser) expr() {
 		this.extend()
 		return
 	}
-	panic(ErrorInvalidExprHead.Error())
+	panic(ErrorInvalidExprHead.Format(t.Pos).Error())
 }
 
 // extend 匹配表达式扩展部分
@@ -162,7 +177,8 @@ func (this *Parser) extend() {
 		this.expr()
 		return
 	}
-	panic(ErrorInvalidConnector.Format(this.Lexer.Token(t)).Error())
+
+	panic(ErrorInvalidConnector.Format(t.Pos, this.Lexer.Token(t)).Error())
 }
 
 // function 匹配函数
@@ -190,7 +206,7 @@ func (this *Parser) function() {
 			this.param()
 			return
 		}
-		panic(ErrorInvalidRelopFuncParams.Format(this.Lexer.Token(t)).Error())
+		panic(ErrorInvalidRelopFuncParams.Format(t.Pos, this.Lexer.Token(t)).Error())
 	case TokenKindId:
 		this.match(TokenKindId)
 		var id = t.StringValue()
@@ -224,16 +240,16 @@ func (this *Parser) function() {
 				this.param()
 				return
 			}
-			panic(ErrorInvalidNamedRelopFuncParams.Format(this.Lexer.Token(t)).Error())
+			panic(ErrorInvalidNamedRelopFuncParams.Format(t.Pos, this.Lexer.Token(t)).Error())
 		}
-		panic(ErrorInvalidFuncParams.Format(this.Lexer.Token(t)).Error())
+		panic(ErrorInvalidFuncParams.Format(t.Pos, this.Lexer.Token(t)).Error())
 	case TokenKindRegexp:
 		//匹配正则函数
-		this.addFuncNode(t.StringValue())
+		this.addRegFuncNode(t.StringValue())
 		this.match(TokenKindRegexp)
 		return
 	}
-	panic(ErrorInvalidFunc.Format(this.Lexer.Token(t)).Error())
+	panic(ErrorInvalidFunc.Format(t.Pos, this.Lexer.Token(t)).Error())
 }
 
 // optparams 匹配可选的参数列表
@@ -256,7 +272,7 @@ func (this *Parser) optparams() {
 			case TokenKindRP, TokenKindEOF:
 				break FOR
 			default:
-				panic(ErrorInvalidParamsList.Format(this.Lexer.Token(t)).Error())
+				panic(ErrorInvalidParamsList.Format(t.Pos, this.Lexer.Token(t)).Error())
 			}
 		}
 	}
@@ -283,7 +299,7 @@ func (this *Parser) param() {
 		this.addParam(t)
 		return
 	}
-	panic(ErrorInvalidParamType.Format(this.Lexer.Token(t)).Error())
+	panic(ErrorInvalidParamType.Format(t.Pos, this.Lexer.Token(t)).Error())
 }
 
 // match 匹配指定类型的Token
@@ -295,5 +311,5 @@ func (this *Parser) match(kind TokenKind) {
 	if t.Kind == kind {
 		return
 	}
-	panic(ErrorUnmatchedToken.Format(kind, t.Kind).Error())
+	panic(ErrorUnmatchedToken.Format(kind, t.Pos, t.Kind).Error())
 }

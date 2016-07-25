@@ -4,10 +4,11 @@ package validator
 type NodeKind string
 
 const (
-	NodeKindSpace NodeKind = "NodeKindSpace" //空间节点
-	NodeKindAnd   NodeKind = "NodeKindAnd"   //逻辑与节点
-	NodeKindOr    NodeKind = "NodeKindOr"    //逻辑或节点
-	NodeKindFunc  NodeKind = "NodeKindFunc"  //函数节点
+	NodeKindSpace   NodeKind = "NodeKindSpace"   //空间节点
+	NodeKindAnd     NodeKind = "NodeKindAnd"     //逻辑与节点
+	NodeKindOr      NodeKind = "NodeKindOr"      //逻辑或节点
+	NodeKindFunc    NodeKind = "NodeKindFunc"    //函数节点
+	NodeKindRegFunc NodeKind = "NodeKindRegFunc" //正则函数节点
 )
 
 // 语法节点接口
@@ -144,6 +145,20 @@ func NewFuncNode(name string) SyntaxNode {
 	}
 }
 
+// NewRegFuncNode 创建正则函数节点
+func NewRegFuncNode(exp string) SyntaxNode {
+	return &FuncNode{
+		BaseNode{
+			NodeKindRegFunc,
+			nil,
+			nil,
+			nil,
+		},
+		exp,
+		nil,
+	}
+}
+
 // SetFuncName 设置函数名称
 func (this *FuncNode) SetFuncName(name string) {
 	this.name = name
@@ -151,5 +166,7 @@ func (this *FuncNode) SetFuncName(name string) {
 
 // AddParam 添加参数信息
 func (this *FuncNode) AddParam(t *Token) {
-	this.params = append(this.params, t)
+	if this.params != nil {
+		this.params = append(this.params, t)
+	}
 }
