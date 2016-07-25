@@ -1,10 +1,5 @@
 package validator
 
-import (
-	"errors"
-	"fmt"
-)
-
 /*
 语法:
 param		-> integer
@@ -44,19 +39,22 @@ func NewParser(l *Lexer) *Parser {
 }
 
 // Parse 解析成语法树
-func (this *Parser) Parse() error {
+func (this *Parser) Parse() (e error) {
+	defer func() {
+		//处理表达式解析过程中出现的异常
+		var err, ok = recover().(error)
+		if ok {
+			e = err
+		}
+	}()
 	this.Tree = NewSpaceNode()
-	var err = this.expr()
+	this.expr()
+	var t, err = this.Lexer.Prefetch()
 	if err != nil {
 		return err
 	}
-	var t, err2 = this.Lexer.Prefetch()
-	if err2 != nil {
-		return err2
-	}
 	if t.Kind != TokenKindEOF {
-		fmt.Println("表达式尾有无效的内容")
-		return errors.New("表达式尾有无效的内容")
+		return ErrorInvalidExpr.Format(this.Lexer.Token(t)).Error()
 	}
 	for this.Tree.Parent() != nil {
 		this.Tree = this.Tree.Parent()
@@ -64,13 +62,15 @@ func (this *Parser) Parse() error {
 	return nil
 }
 
+// addSpaceNode 为当前节点添加空间节点
 func (this *Parser) addSpaceNode() {
 	var node = NewSpaceNode()
 	this.Tree.AddChild(node)
 	this.Tree = node
 }
 
-func (this *Parser) addRelopNode(node SyntaxNode) {
+// addLogicalNode 为当前节点添加逻辑节点
+func (this *Parser) addLogicalNode(node SyntaxNode) {
 	var p = this.Tree.Parent()
 	if p.Left() == this.Tree {
 		p.ChangeKind(node.Kind())
@@ -93,32 +93,37 @@ func (this *Parser) addRelopNode(node SyntaxNode) {
 
 }
 
+// addAndNode 为当前节点添加逻辑与节点
 func (this *Parser) addAndNode() {
-	this.addRelopNode(NewAndNode())
+	this.addLogicalNode(NewAndNode())
 }
 
+// addOrNode 为当前节点添加逻辑或节点
 func (this *Parser) addOrNode() {
-	this.addRelopNode(NewOrNode())
+	this.addLogicalNode(NewOrNode())
 }
 
+// addFuncNode 为当前节点添加函数节点
 func (this *Parser) addFuncNode(name string) {
 	var node = NewFuncNode(name)
 	this.Tree.AddChild(node)
 	this.Tree = node
 }
 
+// addParam 给当前函数节点添加参数
 func (this *Parser) addParam(t *Token) {
 	var node = this.Tree.(*FuncNode)
 	node.AddParam(t)
 }
 
-func (this *Parser) expr() error {
+// expr 匹配表达式
+func (this *Parser) expr() {
 	var t, err = this.Lexer.Prefetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if t.Kind == TokenKindEOF {
-		return nil
+		return
 	}
 	if t.Kind == TokenKindLP {
 		this.match(TokenKindLP)
@@ -126,115 +131,116 @@ func (this *Parser) expr() error {
 		this.expr()
 		this.match(TokenKindRP)
 		this.extend()
-		return nil
+		return
 	}
 	if t.Kind == TokenKindRelop || t.Kind == TokenKindId || t.Kind == TokenKindRegexp {
 		this.function()
 		this.extend()
-		return nil
+		return
 	}
-	fmt.Println("表达式语法错误,无法识别的表达式")
-	return errors.New("表达式语法错误,无法识别的表达式")
+	panic(ErrorInvalidExprHead.Error())
 }
 
-func (this *Parser) extend() error {
+// extend 匹配表达式扩展部分
+func (this *Parser) extend() {
 	var t, err = this.Lexer.Prefetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if t.Kind == TokenKindEOF || t.Kind == TokenKindRP {
-		return nil
+		return
 	}
 	if t.Kind == TokenKindAnd {
 		this.match(TokenKindAnd)
 		this.addAndNode()
 		this.expr()
-		return nil
+		return
 	}
 	if t.Kind == TokenKindOr {
 		this.match(TokenKindOr)
 		this.addOrNode()
 		this.expr()
-		return nil
+		return
 	}
-	fmt.Println("扩展语法错误,必须使用&&或||连接表达式")
-	return errors.New("扩展语法错误,必须使用&&或||连接表达式")
+	panic(ErrorInvalidConnector.Format(this.Lexer.Token(t)).Error())
 }
 
-func (this *Parser) function() error {
+// function 匹配函数
+func (this *Parser) function() {
 	var t, err = this.Lexer.Prefetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	switch t.Kind {
 	case TokenKindRelop:
+		//匹配关系函数
 		this.match(TokenKindRelop)
-		this.addFuncNode(this.Lexer.Token(t))
+		this.addFuncNode(t.Value.(string))
 		t, err = this.Lexer.Prefetch()
 		if err != nil {
-			return err
+			panic(err)
 		}
 		switch t.Kind {
 		case TokenKindLP:
 			this.match(TokenKindLP)
 			this.optparams()
 			this.match(TokenKindRP)
-			return nil
+			return
 		case TokenKindInteger, TokenKindFloat, TokenKindString:
 			this.param()
-			return nil
+			return
 		}
-		fmt.Println("关系运算符函数参数错误")
-		return errors.New("关系运算符函数参数错误")
+		panic(ErrorInvalidRelopFuncParams.Format(this.Lexer.Token(t)).Error())
 	case TokenKindId:
 		this.match(TokenKindId)
-		var id = this.Lexer.Token(t)
+		var id = t.StringValue()
 		t, err = this.Lexer.Prefetch()
 		if err != nil {
-			return err
+			panic(err)
 		}
 		switch t.Kind {
 		case TokenKindLP:
+			//匹配函数
 			this.addFuncNode(id)
 			this.match(TokenKindLP)
 			this.optparams()
 			this.match(TokenKindRP)
-			return nil
+			return
 		case TokenKindRelop:
+			//匹配命名关系函数
 			this.match(TokenKindRelop)
-			this.addFuncNode(id + this.Lexer.Token(t))
+			this.addFuncNode(id + t.StringValue())
 			t, err = this.Lexer.Prefetch()
 			if err != nil {
-				return err
+				panic(err)
 			}
 			switch t.Kind {
 			case TokenKindLP:
 				this.match(TokenKindLP)
 				this.optparams()
 				this.match(TokenKindRP)
-				return nil
+				return
 			case TokenKindInteger, TokenKindFloat, TokenKindString:
 				this.param()
-				return nil
+				return
 			}
-			fmt.Println("命名关系函数参数错误")
-			return errors.New("命名关系函数参数错误")
+			panic(ErrorInvalidNamedRelopFuncParams.Format(this.Lexer.Token(t)).Error())
 		}
-		fmt.Println("函数参数错误")
-		return errors.New("函数参数错误")
+		panic(ErrorInvalidFuncParams.Format(this.Lexer.Token(t)).Error())
 	case TokenKindRegexp:
-		this.addFuncNode(this.Lexer.Token(t))
+		//匹配正则函数
+		this.addFuncNode(t.StringValue())
 		this.match(TokenKindRegexp)
-		return nil
+		return
 	}
-	fmt.Println("无法识别的函数")
-	return errors.New("无法识别的函数")
+	panic(ErrorInvalidFunc.Format(this.Lexer.Token(t)).Error())
 }
 
-func (this *Parser) optparams() error {
+// optparams 匹配可选的参数列表
+func (this *Parser) optparams() {
 	var t, err = this.Lexer.Prefetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if t.Kind == TokenKindInteger || t.Kind == TokenKindFloat || t.Kind == TokenKindString {
 	FOR:
@@ -242,7 +248,7 @@ func (this *Parser) optparams() error {
 			this.param()
 			t, err = this.Lexer.Prefetch()
 			if err != nil {
-				return err
+				panic(err)
 			}
 			switch t.Kind {
 			case TokenKindSep:
@@ -250,45 +256,44 @@ func (this *Parser) optparams() error {
 			case TokenKindRP, TokenKindEOF:
 				break FOR
 			default:
-				fmt.Println("参数列表错误,使用了不正确的分隔符或缺少右括号")
-				return errors.New("参数列表错误,使用了不正确的分隔符")
+				panic(ErrorInvalidParamsList.Format(this.Lexer.Token(t)).Error())
 			}
 		}
 	}
-	return nil
+	return
 }
 
-func (this *Parser) param() error {
+// param 匹配单个参数
+func (this *Parser) param() {
 	var t, err = this.Lexer.Prefetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	switch t.Kind {
 	case TokenKindInteger:
 		this.match(TokenKindInteger)
 		this.addParam(t)
-		return nil
+		return
 	case TokenKindFloat:
 		this.match(TokenKindFloat)
 		this.addParam(t)
-		return nil
+		return
 	case TokenKindString:
 		this.match(TokenKindString)
 		this.addParam(t)
-		return nil
+		return
 	}
-	fmt.Println("参数类型错误")
-	return errors.New("参数类型错误")
+	panic(ErrorInvalidParamType.Format(this.Lexer.Token(t)).Error())
 }
 
-func (this *Parser) match(kind TokenKind) error {
+// match 匹配指定类型的Token
+func (this *Parser) match(kind TokenKind) {
 	var t, err = this.Lexer.Fetch()
 	if err != nil {
-		return err
+		panic(err)
 	}
 	if t.Kind == kind {
-		return nil
+		return
 	}
-	fmt.Println("无法匹配的TokenKind")
-	return errors.New("无法匹配的TokenKind")
+	panic(ErrorUnmatchedToken.Format(kind, t.Kind).Error())
 }
