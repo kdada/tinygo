@@ -25,6 +25,18 @@ func (this Error) String() string {
 
 // 错误码
 const (
+	ErrorInvalidValidatorCreator Error = "ErrorInvalidValidatorCreator(V10000):无效的连接创建器"
+	ErrorInvalidKind             Error = "ErrorInvalidKind(V10010):无效的验证器类型(%s)"
+	ErrorIllegalNode             Error = "ErrorIllegalNode(V10011):严重错误,当前验证器出现非法节点(%s)"
+	ErrorIllegalParam            Error = "ErrorIllegalParam(V10012):严重错误,当前验证器出现非法参数(%s)"
+
+	ErrorInvalidFuncName        Error = "ErrorInvalidFuncName(V10020):无效的函数名称(%s)"
+	ErrorMustBeFunc             Error = "ErrorMustBeFunc(V10021):使用了非函数类型(%s)进行注册"
+	ErrorIncorrectParamList     Error = "ErrorIncorrectParamList(V10030):函数拥有不正确的参数列表(%s)"
+	ErrorFirstParamMustBeString Error = "ErrorFirstParamMustBeString(V10031):函数首个参数必须是字符串(%s)"
+	ErrorIncorrectParamType     Error = "ErrorIncorrectParamType(V10032):函数的第%d个参数类型(%s)不正确)"
+	ErrorUnmatchedFunc          Error = "ErrorUnmatchedFunc(V10040):验证函数(%s)不存在,请确保已经注册了该验证函数"
+
 	ErrorInvalidChar         Error = "ErrorInvalidChar(V11000):无效的字符(位置:%d,%s)"
 	ErrorInvalidLogicalAnd   Error = "ErrorInvalidLogicalAnd(V11010):逻辑与的形式必须是&&(位置:%d)"
 	ErrorInvalidLogicalOr    Error = "ErrorInvalidLogicalOr(V11020):逻辑或的形式必须是||(位置:%d)"

@@ -1,6 +1,9 @@
 package validator
 
-import "strconv"
+import (
+	"fmt"
+	"strconv"
+)
 
 /*
 词法:
@@ -22,21 +25,25 @@ sep			-> ','
 */
 
 // 标记类型
-type TokenKind string
+type TokenKind byte
+
+func (this TokenKind) String() string {
+	return fmt.Sprint(byte(this))
+}
 
 const (
-	TokenKindEOF     TokenKind = "TokenKindEOF"     //结束标记
-	TokenKindInteger TokenKind = "TokenKindInteger" //整数
-	TokenKindFloat   TokenKind = "TokenKindFloat"   //浮点数
-	TokenKindString  TokenKind = "TokenKindString"  //字符串
-	TokenKindRelop   TokenKind = "TokenKindRelop"   //关系运算符
-	TokenKindId      TokenKind = "TokenKindId"      //id
-	TokenKindRegexp  TokenKind = "TokenKindRegexp"  //正则表达式
-	TokenKindAnd     TokenKind = "TokenKindAnd"     //逻辑与
-	TokenKindOr      TokenKind = "TokenKindOr"      //逻辑或
-	TokenKindLP      TokenKind = "TokenKindLP"      //左括号
-	TokenKindRP      TokenKind = "TokenKindRP"      //右括号
-	TokenKindSep     TokenKind = "TokenKindSep"     //逗号分隔符
+	TokenKindEOF     TokenKind = iota //结束标记
+	TokenKindInteger                  //整数
+	TokenKindFloat                    //浮点数
+	TokenKindString                   //字符串
+	TokenKindRelop                    //关系运算符
+	TokenKindId                       //id
+	TokenKindRegexp                   //正则表达式
+	TokenKindAnd                      //逻辑与
+	TokenKindOr                       //逻辑或
+	TokenKindLP                       //左括号
+	TokenKindRP                       //右括号
+	TokenKindSep                      //逗号分隔符
 )
 
 // 标记

@@ -1,14 +1,21 @@
 package validator
 
+import "fmt"
+
 // 节点类型
-type NodeKind string
+type NodeKind byte
+
+func (this NodeKind) String() string {
+	return fmt.Sprint(byte(this))
+}
 
 const (
-	NodeKindSpace   NodeKind = "NodeKindSpace"   //空间节点
-	NodeKindAnd     NodeKind = "NodeKindAnd"     //逻辑与节点
-	NodeKindOr      NodeKind = "NodeKindOr"      //逻辑或节点
-	NodeKindFunc    NodeKind = "NodeKindFunc"    //函数节点
-	NodeKindRegFunc NodeKind = "NodeKindRegFunc" //正则函数节点
+	NodeKindSpace    NodeKind = iota //空间节点
+	NodeKindAnd                      //逻辑与节点
+	NodeKindOr                       //逻辑或节点
+	NodeKindFunc                     //函数节点
+	NodeKindRegFunc                  //正则函数节点
+	NodeKindExecutor                 //可执行函数(执行器)节点
 )
 
 // 语法节点接口
@@ -69,7 +76,9 @@ func (this *BaseNode) Left() SyntaxNode {
 // SetLeft 设置左节点
 func (this *BaseNode) SetLeft(n SyntaxNode) {
 	this.left = n
-	n.SetParent(this)
+	if n != nil {
+		n.SetParent(this)
+	}
 }
 
 // Right 返回右节点
@@ -80,17 +89,17 @@ func (this *BaseNode) Right() SyntaxNode {
 // SetRight 设置右节点
 func (this *BaseNode) SetRight(n SyntaxNode) {
 	this.right = n
-	n.SetParent(this)
+	if n != nil {
+		n.SetParent(this)
+	}
 }
 
 // AddChild 添加子节点
 func (this *BaseNode) AddChild(n SyntaxNode) {
 	if this.left == nil {
-		this.left = n
-		n.SetParent(this)
+		this.SetLeft(n)
 	} else if this.right == nil {
-		this.right = n
-		n.SetParent(this)
+		this.SetRight(n)
 	}
 }
 
@@ -169,4 +178,30 @@ func (this *FuncNode) AddParam(t *Token) {
 	if this.params != nil {
 		this.params = append(this.params, t)
 	}
+}
+
+// 可执行执行函数节点,由FuncNode和RegFuncNode转换而成
+type ExecutableFuncNode struct {
+	BaseNode
+	validator ValidatorFunc //验证器函数
+	params    []interface{} //参数列表
+}
+
+// NewExecutableFuncNode 创建可执行执行函数节点
+func NewExecutableFuncNode(v ValidatorFunc, params []interface{}) SyntaxNode {
+	return &ExecutableFuncNode{
+		BaseNode{
+			NodeKindExecutor,
+			nil,
+			nil,
+			nil,
+		},
+		v,
+		params,
+	}
+}
+
+// 执行
+func (this *ExecutableFuncNode) Execute(str string) bool {
+	return this.validator.Validate(str, this.params...)
 }

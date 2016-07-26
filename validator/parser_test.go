@@ -11,9 +11,9 @@ func TestParser(t *testing.T) {
 	var p = NewParser(l)
 	var err = p.Parse()
 	if err != nil {
-		fmt.Println(err)
+		t.Fatal(err)
 	} else {
-		printTree(p.Tree, "")
+		printTree(p.Tree, "#")
 	}
 }
 
@@ -22,7 +22,7 @@ type Stringer interface {
 }
 
 func (this *BaseNode) String() string {
-	return fmt.Sprint(this.kind)
+	return fmt.Sprintf("%d", int(this.kind))
 }
 func (this *FuncNode) String() string {
 	var f = this.name
@@ -36,7 +36,7 @@ func printTree(root SyntaxNode, pre string) {
 	if root == nil {
 		return
 	}
-	fmt.Print(pre + string(root.Kind()) + ":")
+	fmt.Print(pre + ":")
 	fmt.Println(root.(Stringer).String())
 	if root.Left() != nil {
 		printTree(root.Left(), pre+"L-")
