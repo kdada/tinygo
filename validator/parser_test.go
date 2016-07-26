@@ -15,6 +15,25 @@ func TestParser(t *testing.T) {
 	} else {
 		printTree(p.Tree, "#")
 	}
+	var node = p.Tree
+	if node.Kind() != NodeKindOr {
+		t.Fatal("语法树错误")
+	}
+	if node.Left().Kind() != NodeKindAnd {
+		t.Fatal("语法树错误")
+	}
+	if node.Left().Right().Kind() != NodeKindAnd {
+		t.Fatal("语法树错误")
+	}
+	if node.Left().Right().Left().Kind() != NodeKindOr {
+		t.Fatal("语法树错误")
+	}
+	if node.Left().Right().Right().Kind() != NodeKindAnd {
+		t.Fatal("语法树错误")
+	}
+	if node.Left().Right().Right().Right().Kind() != NodeKindOr {
+		t.Fatal("语法树错误")
+	}
 }
 
 type Stringer interface {
