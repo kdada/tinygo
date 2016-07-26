@@ -8,6 +8,14 @@ func init() {
 	RegisterFunc(">=", geI)
 	RegisterFunc("==", eqI)
 	RegisterFunc("!=", neI)
+	RegisterFunc("<", ltF)
+	RegisterFunc("<=", leF)
+	RegisterFunc(">", gtF)
+	RegisterFunc(">=", geF)
+	RegisterFunc("==", eqF)
+	RegisterFunc("!=", neF)
+	RegisterFunc("==", eqS)
+	RegisterFunc("!=", neS)
 
 	Register("string", NewStringValidator)
 }

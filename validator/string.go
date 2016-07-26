@@ -3,6 +3,12 @@ package validator
 import "reflect"
 
 // 字符串验证器
+//  1.使用()改变优先级
+//  2.使用&&和||连接函数或表达式
+//  3.函数包括以下几种
+//    (1)普通函数:IsOK IsOK() BigThan(1234)  Contain('abc')
+//    (2)名称中包含关系运算符:>=10 Len==11 Complex<(12,22)
+//    (3)正则表达式:/[a-z]+?/
 type StringValidator struct {
 	Tree SyntaxNode
 }
