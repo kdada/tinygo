@@ -59,7 +59,32 @@ func (this *Parser) Parse() (e error) {
 	for this.Tree.Parent() != nil {
 		this.Tree = this.Tree.Parent()
 	}
+	// 清理空间节点
+	var root = NewSpaceNode()
+	root.SetLeft(this.Tree)
+	this.clean(root.Left())
+	this.Tree = root.Left()
+	this.Tree.SetParent(nil)
 	return nil
+}
+
+// clean 删除所有空间节点
+func (this *Parser) clean(node SyntaxNode) {
+	if node == nil {
+		return
+	}
+	if node.Kind() == NodeKindSpace {
+		var n = node.Left()
+		if node.Parent().Left() == node {
+			node.Parent().SetLeft(n)
+		} else {
+			node.Parent().SetRight(n)
+		}
+		this.clean(n)
+		return
+	}
+	this.clean(node.Left())
+	this.clean(node.Right())
 }
 
 // up 将节点指针指向当前节点的父节点

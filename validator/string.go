@@ -22,7 +22,6 @@ func NewStringValidator(source string) (Validator, error) {
 	}
 	var t = root.Left()
 	t.SetParent(nil)
-	root.SetLeft(nil)
 	return &StringValidator{t}, nil
 }
 
@@ -37,7 +36,8 @@ func translate(node SyntaxNode) error {
 		if fnode.Kind() == NodeKindFunc {
 			//处理参数信息
 			var name = fnode.name + sep
-			for _, p := range fnode.params {
+			params = make([]interface{}, len(fnode.params))
+			for i, p := range fnode.params {
 				var k = reflect.Invalid
 				switch p.Kind {
 				case TokenKindInteger:
@@ -50,6 +50,7 @@ func translate(node SyntaxNode) error {
 				var e, ok = CheckType(k)
 				if ok {
 					name += e
+					params[i] = p.Value
 				} else {
 					return ErrorIllegalParam.Format(p.Kind).Error()
 				}
