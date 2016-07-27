@@ -47,16 +47,22 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 			var result Result = nil
 			if context.HttpContext.Request.Method == "GET" {
 				//返回文件
-				var filePath = context.HttpContext.Request.URL.Path
-				if !strings.Contains(filePath, "..") {
+				var pathSegs = context.Segments()
+				var containDotDot = false
+				for _, s := range pathSegs {
+					if strings.Contains(s, "..") {
+						containDotDot = true
+						break
+					}
+				}
+				if !containDotDot {
 					var r = this.Router()
 					var count = 0
 					for r != nil {
 						r = r.Parent()
 						count++
 					}
-					var paths = strings.Split(filePath, "/")
-					filePath = filepath.Join(this.path, strings.Join(paths[count:], "/"))
+					var filePath = filepath.Join(this.path, strings.Join(pathSegs[count:len(pathSegs)-1], "/"))
 					result = context.File(filePath)
 				}
 			}
