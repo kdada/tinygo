@@ -74,7 +74,7 @@ func NewHttpConfig() *HttpConfig {
 		LogType:           "console",
 		LogPath:           "",
 		LogAsync:          false,
-		LayoutConfigPath:  "views/layout.json",
+		LayoutConfigPath:  "", //views/layout.json
 		TemplateExt:       "html",
 		TemplateName:      "Content",
 		SessionCookieName: "ssid",

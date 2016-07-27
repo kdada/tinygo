@@ -27,6 +27,6 @@ func (this *BaseRouterExecutor) SetRouterContext(context RouterContext) {
 }
 
 // Excute 执行
-func (this *BaseRouterExecutor) Execute() interface{} {
-	return ErrorExecutorDoNothing.Error()
+func (this *BaseRouterExecutor) Execute() (interface{}, error) {
+	return nil, ErrorExecutorDoNothing.Error()
 }

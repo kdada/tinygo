@@ -103,18 +103,6 @@ func (this *Context) SetValue(name string, value string) {
 	}
 }
 
-// Param 根据名称和类型生成相应类型的数据,使用HttpProcessor中定义的参数生成方法
-//  name:名称,根据该名称从Request里取值
-//  t:生成类型,将对应值转换为该类型
-//  return:返回指定类型的数据
-func (this *Context) Param(name string, t reflect.Type) interface{} {
-	var f = this.Processor.ParamFunc(t.String())
-	if f != nil {
-		return f(this, name, t)
-	}
-	return nil
-}
-
 // ParamString 获取http参数字符串
 func (this *Context) ParamString(key string) (string, error) {
 	var routerResult, ok = this.Value(key)

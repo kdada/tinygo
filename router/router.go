@@ -69,7 +69,7 @@ type RouterExcutor interface {
 	// SetRouterContext 设置路由上下文
 	SetRouterContext(context RouterContext)
 	// Execute 执行,并返回相应结果
-	Execute() interface{}
+	Execute() (interface{}, error)
 }
 
 // 前置过滤器

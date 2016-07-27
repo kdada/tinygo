@@ -2,6 +2,7 @@ package web
 
 import (
 	"path/filepath"
+	"reflect"
 	"strings"
 )
 
@@ -38,7 +39,7 @@ func NewStaticExecutor(path string) *StaticExecutor {
 }
 
 // Excute 执行
-func (this *StaticExecutor) Execute() interface{} {
+func (this *StaticExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
@@ -64,11 +65,11 @@ func (this *StaticExecutor) Execute() interface{} {
 			}
 			//执行过滤器
 			if this.ExecutePostFilters(result) {
-				return result
+				return result, nil
 			}
 		}
 	}
-	return nil
+	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
 }
 
 // 文件执行器,用于返回特定文件
@@ -85,7 +86,7 @@ func NewFileExecutor(path string) *FileExecutor {
 }
 
 // Excute 执行
-func (this *FileExecutor) Execute() interface{} {
+func (this *FileExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
@@ -94,9 +95,9 @@ func (this *FileExecutor) Execute() interface{} {
 			var file = context.File(this.path)
 			//执行过滤器
 			if this.ExecutePostFilters(file) {
-				return file
+				return file, nil
 			}
 		}
 	}
-	return nil
+	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
 }

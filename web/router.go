@@ -30,33 +30,30 @@ func NewRootRouter() router.Router {
 //   this:必须是控制器指针
 //   param:可以没有或者有多个,如果有则类型必须为结构体指针类型
 //   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
-//  info:创建过程中用于输出信息的字符串
 //  return:执行成功则返回router.Router
-func NewControllerRouter(instance interface{}, info *string) router.Router {
+func NewControllerRouter(instance interface{}) router.Router {
 	var instanceType = reflect.TypeOf(instance)
 	if IsStructPtrType(instanceType) {
 		panic(ErrorNotStructPtr.Format(instanceType.String()).Error())
 	}
 	var methods = make([]*MethodMetadata, 0)
 	//遍历控制器方法
-	ForeachMethod(instanceType, func(method reflect.Method) {
+	var err = ForeachMethod(instanceType, func(method reflect.Method) error {
 		var mMd, err = AnalyzeControllerMethod(method)
 		if err != nil {
-			if info != nil {
-				*info += err.Error() + "\n"
-			}
-			return
+			return err
 		}
 		// 对返回值进行检查,符合要求的方法才能作为接口使用
 		err = CheckResult(mMd)
 		if err != nil {
-			if info != nil {
-				*info += err.Error() + "\n"
-			}
-			return
+			return err
 		}
 		methods = append(methods, mMd)
+		return nil
 	})
+	if err != nil {
+		panic(err)
+	}
 	var controllerRouter = NewSpaceRouter(instanceType.Name())
 	for _, m := range methods {
 		var mr = NewSpaceRouter(instanceType.Name())

@@ -89,8 +89,8 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	//创建首页跳转
 	if processor.Config.Home != "" {
 		var r = NewSpaceRouter("Get")
-		var excutor = NewSimpleExecutor(func(r *Context) interface{} {
-			return r.Redispatch(r.Processor.Config.Home)
+		var excutor = NewSimpleExecutor(func(r *Context) (interface{}, error) {
+			return r.Redispatch(r.Processor.Config.Home), nil
 		})
 		r.SetRouterExcutorGenerator(func() router.RouterExcutor {
 			return excutor
@@ -176,8 +176,10 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 		}
 		var executor, ok = this.Root.Match(context)
 		if ok {
-			var r = executor.Execute()
-			if this.Event != nil {
+			var r, err = executor.Execute()
+			if err != nil {
+				this.Event.Error(this, context, err)
+			} else if this.Event != nil {
 				var result = []interface{}{}
 				if r != nil {
 					var rs, ok = r.([]interface{})
@@ -189,10 +191,9 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 				}
 				this.Event.RequestFinish(this, context, result)
 			}
-		} else {
-			if this.Event != nil {
-				this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, ErrorRouterNotFound.Format(context.HttpContext.Request.URL.String()).String())})
-			}
+		} else if this.Event != nil {
+			this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, ErrorRouterNotFound.Format(context.HttpContext.Request.URL.String()).String())})
+
 		}
 	} else {
 		if this.Event != nil {

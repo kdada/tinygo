@@ -1,26 +1,73 @@
 package web
 
-import "reflect"
+import (
+	"reflect"
+	"regexp"
+	"strings"
+
+	"github.com/kdada/tinygo/validator"
+)
+
+// 值提供器
+type ValueProvider interface {
+	// String 根据名称和类型返回相应的字符串值,返回的bool表示该值是否存在
+	String(name string, t reflect.Type) ([]string, bool)
+	// Value 根据名称和类型返回相应的对象
+	Value(name string, t reflect.Type) interface{}
+}
 
 // 参数方法,根据name和type生成指定类型的数据
-type ParamFunc func(name string, t reflect.Type) interface{}
+//type ParamFunc func(name string, t reflect.Type) interface{}
+
+// 字段解析类型
+type FieldKind byte
+
+const (
+	FieldKindNone     FieldKind = iota //无需解析 -
+	FieldKindOptional                  //可选解析 ?
+	FieldKindRequired                  //必须解析 !
+)
 
 // 字段元数据
 type FieldMetadata struct {
-	Name  string              //字段名
-	Field reflect.StructField //字段信息
+	Name      string              //字段名
+	Field     reflect.StructField //字段信息
+	Kind      FieldKind           //字段解析类型
+	Validator validator.Validator //验证器
 }
 
 // Set 设置当前字段,instance必须是指针类型
-func (this *FieldMetadata) Set(instance reflect.Value, param ParamFunc) {
-	var f = param(this.Name, this.Field.Type)
-	var fValue reflect.Value
-	if f == nil {
-		fValue = reflect.New(this.Field.Type).Elem()
-	} else {
-		fValue = reflect.ValueOf(f)
+func (this *FieldMetadata) Set(instance reflect.Value, param ValueProvider) error {
+	if this.Kind != FieldKindNone {
+		var strs []string
+		var valid = false
+		strs, valid = param.String(this.Name, this.Field.Type)
+		if this.Kind == FieldKindRequired && !valid {
+			return ErrorRequiredField.Format(this.Name).Error()
+		}
+		if this.Validator != nil {
+			for i, v := range strs {
+				valid = this.Validator.Validate(v)
+				if !valid {
+					if this.Kind == FieldKindRequired {
+						return ErrorFieldNotValid.Format(this.Name, i).Error()
+					}
+					break
+				}
+			}
+		}
+		if valid {
+			var f = param.Value(this.Name, this.Field.Type)
+			var fValue reflect.Value
+			if f == nil {
+				fValue = reflect.New(this.Field.Type).Elem()
+			} else {
+				fValue = reflect.ValueOf(f)
+			}
+			instance.Elem().FieldByIndex(this.Field.Index).Set(fValue)
+		}
 	}
-	instance.Elem().FieldByIndex(this.Field.Index).Set(fValue)
+	return nil
 }
 
 // 结构体元数据
@@ -31,16 +78,19 @@ type StructMetadata struct {
 }
 
 // GenerateStruct 生成结构体,返回值为当前结构体的指针
-func (this *StructMetadata) GenerateStruct(param ParamFunc) reflect.Value {
-	var res = param(this.Name, this.Struct)
+func (this *StructMetadata) GenerateStruct(param ValueProvider) (reflect.Value, error) {
+	var res = param.Value(this.Name, this.Struct)
 	if res != nil {
-		return reflect.ValueOf(res)
+		return reflect.ValueOf(res), nil
 	}
 	var result = reflect.New(this.Struct.Elem())
 	for _, fMd := range this.Fields {
-		fMd.Set(result, param)
+		var err = fMd.Set(result, param)
+		if err != nil {
+			return reflect.Value{}, err
+		}
 	}
-	return result
+	return result, nil
 }
 
 // 方法元数据
@@ -54,21 +104,28 @@ type MethodMetadata struct {
 // Call 调用当前方法元数据中包含的方法
 //  param:通过字段名和类型名返回相应的值,返回nil表示该字段需要自动设置为默认值
 //  return:返回方法的返回值
-func (this *MethodMetadata) Call(param ParamFunc) []interface{} {
+func (this *MethodMetadata) Call(param ValueProvider) ([]interface{}, error) {
 	var params = make([]reflect.Value, 0)
 	for _, sMd := range this.Params {
-		params = append(params, sMd.GenerateStruct(param))
+		var p, err = sMd.GenerateStruct(param)
+		if err != nil {
+			return nil, err
+		}
+		params = append(params, p)
 	}
 	var resultValue = this.Method.Call(params)
 	var result = make([]interface{}, 0)
 	for _, v := range resultValue {
 		result = append(result, v.Interface())
 	}
-	return result
+	return result, nil
 }
 
 // 全局结构体元数据信息
 var globalStructMetadata = make(map[string]*StructMetadata)
+
+// 验证字符串提取正则
+var vldReg = regexp.MustCompile("^[?!] *?;(.*)$")
 
 // AnalyzeStruct 分析结构体字段(包括匿名字段)
 func AnalyzeStruct(s reflect.Type) (*StructMetadata, error) {
@@ -83,11 +140,36 @@ func AnalyzeStruct(s reflect.Type) (*StructMetadata, error) {
 	sMd.Name = s.Name()
 	sMd.Struct = s
 	sMd.Fields = make([]*FieldMetadata, 0)
-	ForeachField(s, func(field reflect.StructField) {
+	ForeachField(s, func(field reflect.StructField) error {
+		var tag = field.Tag.Get("vld")
 		var fMd = new(FieldMetadata)
 		fMd.Name = field.Name
 		fMd.Field = field
+		switch {
+		case tag == "" || strings.HasPrefix(tag, "!"):
+			fMd.Kind = FieldKindRequired
+		case strings.HasPrefix(tag, "?"):
+			fMd.Kind = FieldKindOptional
+		case strings.HasPrefix(tag, "-"):
+			fMd.Kind = FieldKindNone
+		default:
+			return ErrorInvalidTag.Format(sMd.Name, field.Name, tag[0]).Error()
+		}
+		if fMd.Kind != FieldKindNone {
+			//获取验证字符串
+			var arr = vldReg.FindStringSubmatch(tag)
+			if len(arr) == 2 {
+				var src = arr[1]
+				var vld, err = validator.NewValidator("string", src)
+				if err != nil {
+					return err
+				}
+				fMd.Validator = vld
+
+			}
+		}
 		sMd.Fields = append(sMd.Fields, fMd)
+		return nil
 	})
 	globalStructMetadata[s.String()] = sMd
 	return sMd, nil
@@ -105,23 +187,22 @@ func AnalyzeMethod(name string, method reflect.Value) (*MethodMetadata, error) {
 	methodMd.Return = make([]reflect.Type, 0)
 
 	//遍历方法的返回值
-	ForeachResult(method.Type(), func(result reflect.Type) {
+	ForeachResult(method.Type(), func(result reflect.Type) error {
 		methodMd.Return = append(methodMd.Return, result)
+		return nil
 	})
 
-	var err error
 	//遍历方法参数
-	ForeachParam(method.Type(), func(param reflect.Type) {
+	var err = ForeachParam(method.Type(), func(param reflect.Type) error {
 		if !IsStructPtrType(param) {
-			err = ErrorParamNotPtr.Format(methodMd.Name, param.Kind().String()).Error()
-			return
+			return ErrorParamNotPtr.Format(methodMd.Name, param.Kind().String()).Error()
 		}
-		var md, err2 = AnalyzeStruct(param)
-		if err2 != nil {
-			err = err2
-			return
+		var md, err = AnalyzeStruct(param)
+		if err != nil {
+			return err
 		}
 		methodMd.Params = append(methodMd.Params, md)
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -140,16 +221,20 @@ func IsStructPtrType(instance reflect.Type) bool {
 }
 
 // ForeachMethod 遍历instance的所有方法,instance必须是结构体指针类型(仅遍历使用结构体指针的方法)
-func ForeachMethod(instance reflect.Type, solve func(method reflect.Method)) {
+func ForeachMethod(instance reflect.Type, solve func(method reflect.Method) error) error {
 	if IsStructPtrType(instance) {
 		for i := 0; i < instance.NumMethod(); i++ {
-			solve(instance.Method(i))
+			var err = solve(instance.Method(i))
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // ForeachField 遍历instance的所有字段(包括匿名字段,但不包括私有字段),instance必须是结构体或结构体指针类型
-func ForeachField(instance reflect.Type, solve func(field reflect.StructField)) {
+func ForeachField(instance reflect.Type, solve func(field reflect.StructField) error) error {
 	if IsStructPtrType(instance) {
 		instance = instance.Elem()
 	}
@@ -160,27 +245,39 @@ func ForeachField(instance reflect.Type, solve func(field reflect.StructField)) 
 				if field.Anonymous {
 					ForeachField(field.Type, solve)
 				} else {
-					solve(field)
+					var err = solve(field)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
+	return nil
 }
 
 // ForeachParam 遍历instance所有参数,instance必须是函数类型
-func ForeachParam(instance reflect.Type, solve func(param reflect.Type)) {
+func ForeachParam(instance reflect.Type, solve func(param reflect.Type) error) error {
 	if instance.Kind() == reflect.Func {
 		for i := 0; i < instance.NumIn(); i++ {
-			solve(instance.In(i))
+			var err = solve(instance.In(i))
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // ForeachResult 遍历instance所有返回值,instance必须是函数类型
-func ForeachResult(instance reflect.Type, solve func(result reflect.Type)) {
+func ForeachResult(instance reflect.Type, solve func(result reflect.Type) error) error {
 	if instance.Kind() == reflect.Func {
 		for i := 0; i < instance.NumOut(); i++ {
-			solve(instance.Out(i))
+			var err = solve(instance.Out(i))
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

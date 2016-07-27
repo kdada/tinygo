@@ -8,9 +8,9 @@ import (
 type HttpProcessorEvent interface {
 	// 每次出现一个新请求的时候触发
 	Request(processor *HttpProcessor, context *Context)
-	// 每次请求执行完成的时候触发
+	// 每次请求正确执行完成的时候触发
 	RequestFinish(processor *HttpProcessor, context *Context, result []interface{})
-	// 出现错误时触发,出现错误时context需要检查是否为nil后才能使用
+	// 请求过程中出现任何错误时触发,出现错误时context需要检查是否为nil后才能使用
 	Error(processor *HttpProcessor, context *Context, err error)
 }
 
@@ -48,5 +48,8 @@ func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, c
 
 // 出现错误时触发
 func (this *DefaultHttpProcessorEvent) Error(processor *HttpProcessor, context *Context, err error) {
+	if context != nil {
+		context.WriteString(err.Error())
+	}
 	processor.Logger.Error(err)
 }

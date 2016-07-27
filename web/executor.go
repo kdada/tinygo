@@ -1,6 +1,10 @@
 package web
 
-import "github.com/kdada/tinygo/router"
+import (
+	"reflect"
+
+	"github.com/kdada/tinygo/router"
+)
 
 // 公共执行器
 type CommonExecutor struct {
@@ -31,34 +35,40 @@ func (this *CommonExecutor) ExecutePostFilters(result interface{}) bool {
 	return true
 }
 
+// 简单执行器方法
+type SimpleExecutorFunc func(r *Context) (interface{}, error)
+
 // 简单执行器
 type SimpleExecutor struct {
 	CommonExecutor
-	f func(r *Context) interface{}
+	f SimpleExecutorFunc
 }
 
 // NewSimpleExecutor 创建简单执行器
-func NewSimpleExecutor(f func(r *Context) interface{}) *SimpleExecutor {
+func NewSimpleExecutor(f SimpleExecutorFunc) *SimpleExecutor {
 	var se = new(SimpleExecutor)
 	se.f = f
 	return se
 }
 
 // Excute 执行
-func (this *SimpleExecutor) Execute() interface{} {
+func (this *SimpleExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
 		// 执行前置过滤器
 		if this.ExecutePreFilters() {
-			var r = this.f(context)
+			var r, err = this.f(context)
+			if err != nil {
+				return nil, err
+			}
 			//执行后置过滤器
 			if this.ExecutePostFilters(r) {
-				return r
+				return r, nil
 			}
 		}
 	}
-	return nil
+	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
 }
 
 // 高级执行器
@@ -75,19 +85,45 @@ func NewAdvancedExecutor(method *MethodMetadata) *AdvancedExecutor {
 }
 
 // Excute 执行
-func (this *AdvancedExecutor) Execute() interface{} {
+func (this *AdvancedExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
 		// 执行前置过滤器
 		if this.ExecutePreFilters() {
 			//执行处理方法
-			var result = this.Method.Call(context.Param)
+			var result, err = this.Method.Call(&ContextValueProvider{context})
+			if err != nil {
+				return nil, err
+			}
 			//执行后置过滤器
 			if this.ExecutePostFilters(result) {
-				return result
+				return result, nil
 			}
 		}
+	}
+	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
+
+}
+
+// http上下文值提供器
+type ContextValueProvider struct {
+	context *Context
+}
+
+// String 根据名称和类型返回相应的字符串值,返回的bool表示该值是否存在
+func (this *ContextValueProvider) String(name string, t reflect.Type) ([]string, bool) {
+	return this.context.Values(name)
+}
+
+// Value 根据名称和类型生成相应类型的数据,使用HttpProcessor中定义的参数生成方法
+//  name:名称,根据该名称从Request里取值
+//  t:生成类型,将对应值转换为该类型
+//  return:返回指定类型的数据
+func (this *ContextValueProvider) Value(name string, t reflect.Type) interface{} {
+	var f = this.context.Processor.ParamFunc(t.String())
+	if f != nil {
+		return f(this.context, name, t)
 	}
 	return nil
 }
