@@ -2,12 +2,11 @@ package connector
 
 import (
 	"net/http"
-	"strings"
+	"regexp"
 )
 
 // Http上下文
 type HttpContext struct {
-	Segments       []string            //路由段
 	Request        *http.Request       //http请求
 	ResponseWriter http.ResponseWriter //http响应
 }
@@ -17,18 +16,14 @@ type HttpHandler struct {
 	dispatcher Dispatcher
 }
 
+var spReg = regexp.MustCompile(`[\\/]+`)
+
 // ServeHTTP 处理http请求
 func (this *HttpHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
-	var context = &HttpContext{nil, r, rw}
-	context.Segments = strings.Split(r.URL.Path, `/`)
-	var i = len(context.Segments) - 1
-	for ; i > 0; i-- {
-		if context.Segments[i] != "" {
-			break
-		}
-	}
-	context.Segments = context.Segments[:i+1]
-	this.dispatcher.Dispatch(context.Segments, context)
+	var context = &HttpContext{r, rw}
+	var segs = spReg.Split(r.URL.Path+"/", -1)
+	segs = segs[:len(segs)-1]
+	this.dispatcher.Dispatch(segs, context)
 }
 
 // Http连接器
