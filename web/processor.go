@@ -64,7 +64,7 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	register(processor.Funcs)
 	processor.DefaultFunc = DefaultFunc
 	//创建视图模板信息
-	processor.Templates = NewViewTemplates(filepath.Join(config.Root, config.View), config.ViewConfig, config.TemplateName, config.TemplateExt)
+	processor.Templates = NewViewTemplates(config.View, config.ViewConfig, config.TemplateName, config.TemplateExt)
 	if config.Precompile {
 		//预编译模板
 		var err = processor.Templates.CompileAll(new(CommonFunMap))

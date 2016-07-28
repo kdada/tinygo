@@ -29,7 +29,7 @@ type HttpConfig struct {
 	CSRFExpire        int         //csrf token过期时间,单位为秒
 	CSRFCookieName    string      //csrf Cookie 名
 	CSRFTokenName     string      //csrf 表单名
-	Static            []string    //静态文件目录,默认为"content",路径相对于应用根目录
+	Static            []string    //静态文件目录,默认为"content"
 	View              string      //视图文件目录,默认为"views"
 	Precompile        bool        //是否预编译视图,默认为false
 	Api               string      //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
@@ -164,7 +164,6 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 	if err == nil {
 		httpCfg.Static = strings.Split(strValue, ";")
 		//路径规范化
-		//统一规范为相对路径,相对于{Config.Root}所指定的目录
 		// \content\css ==> content/css
 		for i, p := range httpCfg.Static {
 			httpCfg.Static[i] = NormalizePath(p)
@@ -246,7 +245,7 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-		//路径规范化,相对于{Config.Root}/{Config.View}所指定的目录
+		//路径规范化,相对于{Config.View}所指定的目录
 		for k, v := range httpCfg.ViewConfig.LayoutMap {
 			httpCfg.ViewConfig.LayoutMap[k] = NormalizePath(v)
 		}
