@@ -30,6 +30,7 @@ type HttpConfig struct {
 	CSRFCookieName    string      //csrf Cookie 名
 	CSRFTokenName     string      //csrf 表单名
 	Static            []string    //静态文件目录,默认为"content"
+	List              bool        //静态文件目录是否允许显示目录列表,默认为false
 	View              string      //视图文件目录,默认为"views"
 	Precompile        bool        //是否预编译视图,默认为false
 	Api               string      //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
@@ -65,6 +66,7 @@ func NewHttpConfig() *HttpConfig {
 		CSRFSource:        "",
 		CSRFExpire:        300,
 		Static:            []string{"content"},
+		List:              false,
 		View:              "views",
 		Precompile:        false,
 		Api:               "json",
@@ -169,7 +171,10 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 			httpCfg.Static[i] = NormalizePath(p)
 		}
 	}
-
+	boolValue, err = global.Bool("List")
+	if err != nil {
+		httpCfg.List = boolValue
+	}
 	strValue, err = global.String("View")
 	if err == nil {
 		httpCfg.View = strValue

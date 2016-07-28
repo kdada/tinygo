@@ -141,7 +141,9 @@ func NewStaticRouter(name string, path string) router.Router {
 	mr.SetRouterExcutorGenerator(func() router.RouterExcutor {
 		return excutor
 	})
-	return mr
+	var pathRouter = NewSpaceRouter(name)
+	pathRouter.AddChild(mr)
+	return pathRouter
 }
 
 // 检查元数据的第一个返回值是否符合web.Result接口

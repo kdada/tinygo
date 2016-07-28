@@ -1,6 +1,7 @@
 package web
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -63,7 +64,17 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 						count++
 					}
 					var filePath = filepath.Join(this.path, strings.Join(pathSegs[count:len(pathSegs)-1], "/"))
-					result = context.File(filePath)
+					if !context.Processor.Config.List {
+						var f, err = os.Stat(filePath)
+						if err != nil || f.IsDir() {
+							result = context.NotFound()
+						} else {
+							result = context.File(filePath)
+						}
+					} else {
+						result = context.File(filePath)
+					}
+
 				}
 			}
 			if result == nil {
