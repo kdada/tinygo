@@ -2,6 +2,7 @@ package tinygo
 
 import (
 	"html/template"
+	"reflect"
 	"time"
 )
 
@@ -28,11 +29,25 @@ type UserFuncMap interface {
 //  tourl(s string) template.URL:转换字符串为URL
 //  time(t time.Time) string:返回时间字符串2006-01-02 15:04:05
 //  date(t time.Time) string:返回日期字符串2006-01-02
-type CommonFunMap struct {
+var commonFuncMap template.FuncMap
+
+// RegisterTmplFunc 注册模板函数
+func RegisterTmplFunc(name string, f interface{}) error {
+	if f == nil {
+		delete(commonFuncMap, name)
+		return nil
+	}
+	var t = reflect.TypeOf(f)
+	if t.Kind() == reflect.Func {
+		commonFuncMap[name] = f
+		return nil
+	}
+	return TinyGoErrorParamMustBeFunc.Error()
 }
 
-func (this *CommonFunMap) FuncMap() template.FuncMap {
-	return template.FuncMap{
+// 初始化commonFuncMap
+func init() {
+	commonFuncMap = template.FuncMap{
 		"until": func(num int) []int {
 			var result = make([]int, num)
 			for i := 0; i < num; i++ {
@@ -111,6 +126,15 @@ func (this *CommonFunMap) FuncMap() template.FuncMap {
 			return t.Format("2006-01-02")
 		},
 	}
+}
+
+// 公共模版方法
+type CommonFuncMap struct {
+}
+
+// FuncMap 返回所有公共模板方法
+func (this *CommonFuncMap) FuncMap() template.FuncMap {
+	return commonFuncMap
 }
 
 // CSRF模版方法

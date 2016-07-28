@@ -44,7 +44,7 @@ func compileView(filePath string) (*template.Template, error) {
 	var tmplName = filepath.Base(filePath)
 	var tmpl = template.New(tmplName)
 	//增加模版方法
-	tmpl.Funcs(new(CommonFunMap).FuncMap())
+	tmpl.Funcs(new(CommonFuncMap).FuncMap())
 	tmpl.Funcs(new(CsrfFuncMap).FuncMap())
 	var tmpls, err = tmpl.ParseFiles(pathSlice...)
 	if err == nil {
