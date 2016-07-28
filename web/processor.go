@@ -192,8 +192,7 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 				this.Event.RequestFinish(this, context, result)
 			}
 		} else if this.Event != nil {
-			this.Event.RequestFinish(this, context, []interface{}{NewUserDefinedResult(StatusCodePageNotFound, ErrorRouterNotFound.Format(context.HttpContext.Request.URL.String()).String())})
-
+			this.Event.Error(this, context, ErrorRouterNotFound.Format(context.HttpContext.Request.URL.String()).Error())
 		}
 	} else {
 		if this.Event != nil {

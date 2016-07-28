@@ -1,8 +1,6 @@
 package web
 
-import (
-	"strings"
-)
+import "strings"
 
 // HttpProcessor事件接口
 type HttpProcessorEvent interface {
@@ -49,7 +47,10 @@ func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, c
 // 出现错误时触发
 func (this *DefaultHttpProcessorEvent) Error(processor *HttpProcessor, context *Context, err error) {
 	if context != nil {
-		context.WriteString(err.Error())
+		var err = context.WriteResult(context.NotFound())
+		if err != nil {
+			processor.Logger.Error(err)
+		}
 	}
 	processor.Logger.Error(err)
 }
