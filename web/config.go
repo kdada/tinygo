@@ -70,7 +70,7 @@ func NewHttpConfig() *HttpConfig {
 		View:              "views",
 		Precompile:        false,
 		Api:               "json",
-		Favicon:           "favicon.icon",
+		Favicon:           "favicon.ico",
 		Robots:            "robots.txt",
 		Log:               true,
 		LogType:           "console",

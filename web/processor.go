@@ -67,7 +67,7 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	processor.Templates = NewViewTemplates(config.View, config.ViewConfig, config.TemplateName, config.TemplateExt)
 	if config.Precompile {
 		//预编译模板
-		var err = processor.Templates.CompileAll(new(CommonFunMap))
+		var err = processor.Templates.CompileAll(commonFuncMap)
 		if err != nil {
 			return nil, err
 		}

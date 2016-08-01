@@ -41,4 +41,5 @@ const (
 	ErrorInvalidWriter      Error = "ErrorInvalidWriter(W10200):无效的http写入器"
 	ErrorInvalidPartialView Error = "ErrorInvalidPartialView(W10300):无效的部分视图(%s),找不到指定名称(%s)的模板"
 	ErrorInvalidKey         Error = "ErrorInvalidKey(W10400):无效的Key(%s)"
+	ErrorParamMustBeFunc    Error = "ErrorParamMustBeFunc(W10500):参数必须是函数"
 )

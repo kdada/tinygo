@@ -23,9 +23,10 @@ type ValueProvider interface {
 type FieldKind byte
 
 const (
-	FieldKindNone     FieldKind = iota //无需解析 -
-	FieldKindOptional                  //可选解析 ?
-	FieldKindRequired                  //必须解析 !
+	FieldKindUnimportant FieldKind = iota //次要字段 空 ,不验证直接注入值,无论是否成功都不报告错误
+	FieldKindIgnore                       //忽略字段 -  ,忽略该字段,不验证也不注入,使用字段初始值
+	FieldKindOptional                     //可选验证 ?  ,进行验证,验证通过后注入值,未通过验证使用字段初始值且不报告错误
+	FieldKindRequired                     //必须验证 !  ,进行验证,验证通过后注入值,未通过验证报告错误
 )
 
 // 字段元数据
@@ -38,21 +39,26 @@ type FieldMetadata struct {
 
 // Set 设置当前字段,instance必须是指针类型
 func (this *FieldMetadata) Set(instance reflect.Value, param ValueProvider) error {
-	if this.Kind != FieldKindNone {
-		var strs []string
-		var valid = false
-		strs, valid = param.String(this.Name, this.Field.Type)
-		if this.Kind == FieldKindRequired && !valid {
-			return ErrorRequiredField.Format(this.Name).Error()
-		}
-		if this.Validator != nil {
-			for i, v := range strs {
-				valid = this.Validator.Validate(v)
-				if !valid {
-					if this.Kind == FieldKindRequired {
-						return ErrorFieldNotValid.Format(this.Name, i).Error()
+	if this.Kind != FieldKindIgnore {
+		var valid = true
+		if this.Kind != FieldKindUnimportant {
+			// FieldKindOptional 和 FieldKindRequired 需要进行验证
+			var strs []string
+			strs, valid = param.String(this.Name, this.Field.Type)
+			if this.Kind == FieldKindRequired && !valid {
+				return ErrorRequiredField.Format(this.Name).Error()
+			}
+			//进行验证器验证,如果验证器不存在则默认为通过验证
+			valid = true
+			if this.Validator != nil {
+				for i, v := range strs {
+					valid = this.Validator.Validate(v)
+					if !valid {
+						if this.Kind == FieldKindRequired {
+							return ErrorFieldNotValid.Format(this.Name, i).Error()
+						}
+						break
 					}
-					break
 				}
 			}
 		}
@@ -142,20 +148,28 @@ func AnalyzeStruct(s reflect.Type) (*StructMetadata, error) {
 	sMd.Fields = make([]*FieldMetadata, 0)
 	ForeachField(s, func(field reflect.StructField) error {
 		var tag = field.Tag.Get("vld")
+		if tag == "" && field.Tag != "" {
+			var firstChar = field.Tag[0]
+			if firstChar == '!' || firstChar == '?' || firstChar == '-' {
+				tag = string(field.Tag)
+			}
+		}
 		var fMd = new(FieldMetadata)
 		fMd.Name = field.Name
 		fMd.Field = field
 		switch {
-		case tag == "" || strings.HasPrefix(tag, "!"):
+		case tag == "":
+			fMd.Kind = FieldKindUnimportant
+		case strings.HasPrefix(tag, "!"):
 			fMd.Kind = FieldKindRequired
 		case strings.HasPrefix(tag, "?"):
 			fMd.Kind = FieldKindOptional
 		case strings.HasPrefix(tag, "-"):
-			fMd.Kind = FieldKindNone
+			fMd.Kind = FieldKindIgnore
 		default:
 			return ErrorInvalidTag.Format(sMd.Name, field.Name, tag[0]).Error()
 		}
-		if fMd.Kind != FieldKindNone {
+		if fMd.Kind == FieldKindOptional || fMd.Kind == FieldKindRequired {
 			//获取验证字符串
 			var arr = vldReg.FindStringSubmatch(tag)
 			if len(arr) == 2 {

@@ -33,7 +33,7 @@ func NewRootRouter() router.Router {
 //  return:执行成功则返回router.Router
 func NewControllerRouter(instance interface{}) router.Router {
 	var instanceType = reflect.TypeOf(instance)
-	if IsStructPtrType(instanceType) {
+	if !IsStructPtrType(instanceType) {
 		panic(ErrorNotStructPtr.Format(instanceType.String()).Error())
 	}
 	var methods = make([]*MethodMetadata, 0)
@@ -54,9 +54,11 @@ func NewControllerRouter(instance interface{}) router.Router {
 	if err != nil {
 		panic(err)
 	}
-	var controllerRouter = NewSpaceRouter(instanceType.Name())
+	var controllerName = instanceType.Elem().Name()
+	controllerName = strings.TrimSuffix(controllerName, "Controller")
+	var controllerRouter = NewSpaceRouter(controllerName)
 	for _, m := range methods {
-		var mr = NewSpaceRouter(instanceType.Name())
+		var mr = NewSpaceRouter(m.Name)
 		var excutor = NewAdvancedExecutor(m)
 		mr.AddChildren(HttpResultRouter(m.Return[0].Name(), func() router.RouterExcutor {
 			return excutor

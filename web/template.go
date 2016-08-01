@@ -18,11 +18,11 @@ type ViewConfig struct {
 // 视图模板信息
 type ViewTemplates struct {
 	templates   map[string]*template.Template
-	config      *ViewConfig   //视图配置
-	viewPath    string        //视图文件目录
-	partialName string        //部分视图的模板名称
-	templateExt string        //模板的扩展名(小写)
-	funcMaps    []UserFuncMap //最后一次编译使用的方法信息
+	config      *ViewConfig      //视图配置
+	viewPath    string           //视图文件目录
+	partialName string           //部分视图的模板名称
+	templateExt string           //模板的扩展名(小写)
+	funcMap     template.FuncMap //最后一次编译使用的模板方法信息
 }
 
 // NewViewTemplates 创建视图模板信息
@@ -42,15 +42,15 @@ func NewViewTemplates(path string, config *ViewConfig, partial string, ext strin
 }
 
 // CompileAll 编译所有视图
-func (this *ViewTemplates) CompileAll(funcMaps ...UserFuncMap) error {
-	this.funcMaps = funcMaps
+func (this *ViewTemplates) CompileAll(funcMap template.FuncMap) error {
+	this.funcMap = funcMap
 	var templates = make(map[string]*template.Template)
 	var err = filepath.Walk(this.viewPath, func(filePath string, fileInfo os.FileInfo, err error) error {
 		//遍历目录下的所有扩展名为templateExt的文件
 		if err == nil && fileInfo != nil && !fileInfo.IsDir() && strings.ToLower(filepath.Ext(fileInfo.Name())) == this.templateExt {
 			filePath = this.rel(filePath)
 			if !this.isLayout(filePath) {
-				var tmpl, err = this.compile(filePath, this.funcMaps)
+				var tmpl, err = this.compile(filePath, this.funcMap)
 				if err == nil {
 					templates[filePath] = tmpl
 				} else {
@@ -109,7 +109,7 @@ func (this *ViewTemplates) file(path string) string {
 }
 
 // Compile 编译指定路径的视图
-func (this *ViewTemplates) compile(path string, funcMaps []UserFuncMap) (*template.Template, error) {
+func (this *ViewTemplates) compile(path string, funcMap template.FuncMap) (*template.Template, error) {
 	var pathSlice = []string{path}
 	var layout = path
 	var ok = true
@@ -123,10 +123,13 @@ func (this *ViewTemplates) compile(path string, funcMaps []UserFuncMap) (*templa
 	var tmplName = filepath.Base(layout)
 	var tmpl = template.New(tmplName)
 	//增加模版方法
-	for _, f := range funcMaps {
-		tmpl.Funcs(f.FuncMap())
+	tmpl.Funcs(funcMap)
+	var tmpls, err = tmpl.ParseFiles(pathSlice...)
+	if err == nil {
+		var name = filepath.Base(pathSlice[len(pathSlice)-1])
+		tmpl = tmpls.Lookup(name)
 	}
-	return tmpl.ParseFiles(pathSlice...)
+	return tmpl, err
 }
 
 // template 返回指定路径的视图模板,如果模板不存在则编译该模板
@@ -137,7 +140,7 @@ func (this *ViewTemplates) template(path string) (*template.Template, error) {
 		return tmpl, nil
 	}
 	path = this.file(path)
-	return this.compile(path, this.funcMaps)
+	return this.compile(path, this.funcMap)
 }
 
 // ExecView 执行视图

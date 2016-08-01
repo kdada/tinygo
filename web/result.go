@@ -75,7 +75,6 @@ func (this *commonHttpResult) WriteHeader(writer io.Writer) (http.ResponseWriter
 	if this.ContentType != "" {
 		r.Header().Set("Content-Type", this.ContentType)
 	}
-	r.WriteHeader(int(this.Status))
 	return r, nil
 }
 
