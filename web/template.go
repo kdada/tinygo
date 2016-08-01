@@ -30,27 +30,26 @@ type ViewTemplates struct {
 //  config:视图布局配置信息
 //  partial:部分视图的模板名称
 //  ext:模板文件的扩展名(不是以该扩展名结尾的路径都会被加上该名称)
-func NewViewTemplates(path string, config *ViewConfig, partial string, ext string) *ViewTemplates {
+func NewViewTemplates(path string, config *ViewConfig, partial string, ext string, funcMap template.FuncMap) *ViewTemplates {
 	return &ViewTemplates{
 		make(map[string]*template.Template),
 		config,
 		path,
 		partial,
 		strings.ToLower(ext),
-		nil,
+		funcMap,
 	}
 }
 
 // CompileAll 编译所有视图
-func (this *ViewTemplates) CompileAll(funcMap template.FuncMap) error {
-	this.funcMap = funcMap
+func (this *ViewTemplates) CompileAll() error {
 	var templates = make(map[string]*template.Template)
 	var err = filepath.Walk(this.viewPath, func(filePath string, fileInfo os.FileInfo, err error) error {
 		//遍历目录下的所有扩展名为templateExt的文件
 		if err == nil && fileInfo != nil && !fileInfo.IsDir() && strings.ToLower(filepath.Ext(fileInfo.Name())) == this.templateExt {
 			filePath = this.rel(filePath)
 			if !this.isLayout(filePath) {
-				var tmpl, err = this.compile(filePath, this.funcMap)
+				var tmpl, err = this.compile(filePath)
 				if err == nil {
 					templates[filePath] = tmpl
 				} else {
@@ -109,7 +108,7 @@ func (this *ViewTemplates) file(path string) string {
 }
 
 // Compile 编译指定路径的视图
-func (this *ViewTemplates) compile(path string, funcMap template.FuncMap) (*template.Template, error) {
+func (this *ViewTemplates) compile(path string) (*template.Template, error) {
 	var pathSlice = []string{path}
 	var layout = path
 	var ok = true
@@ -123,7 +122,7 @@ func (this *ViewTemplates) compile(path string, funcMap template.FuncMap) (*temp
 	var tmplName = filepath.Base(layout)
 	var tmpl = template.New(tmplName)
 	//增加模版方法
-	tmpl.Funcs(funcMap)
+	tmpl.Funcs(this.funcMap)
 	var tmpls, err = tmpl.ParseFiles(pathSlice...)
 	if err == nil {
 		var name = filepath.Base(pathSlice[len(pathSlice)-1])
@@ -140,7 +139,7 @@ func (this *ViewTemplates) template(path string) (*template.Template, error) {
 		return tmpl, nil
 	}
 	path = this.file(path)
-	return this.compile(path, this.funcMap)
+	return this.compile(path)
 }
 
 // ExecView 执行视图
