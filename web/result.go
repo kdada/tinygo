@@ -80,6 +80,7 @@ func (this *commonHttpResult) WriteHeader(writer io.Writer) (http.ResponseWriter
 	if this.ContentType != "" {
 		w.Header().Set("Content-Type", this.ContentType)
 	}
+	w.WriteHeader(int(this.Status))
 	return w, nil
 }
 
