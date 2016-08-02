@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/textproto"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -200,7 +199,6 @@ func (this *Context) WriteResult(result Result) error {
 func (this *Context) File(path string) *FileResult {
 	var result = new(FileResult)
 	result.Status = 200
-	result.ContentType = ContentType(filepath.Ext(path))
 	result.context = this
 	result.filePath = path
 	return result
@@ -210,7 +208,6 @@ func (this *Context) File(path string) *FileResult {
 func (this *Context) Json(data interface{}) *JsonResult {
 	var result = new(JsonResult)
 	result.Status = 200
-	result.ContentType = ""
 	result.obj = data
 	return result
 }
@@ -219,7 +216,6 @@ func (this *Context) Json(data interface{}) *JsonResult {
 func (this *Context) Xml(data interface{}) *XmlResult {
 	var result = new(XmlResult)
 	result.Status = 200
-	result.ContentType = ""
 	result.obj = data
 	return result
 }
@@ -255,7 +251,6 @@ func (this *Context) Api(data interface{}) HttpResult {
 func (this *Context) NotFound() *NotFoundResult {
 	var result = new(NotFoundResult)
 	result.Status = 404
-	result.ContentType = ""
 	result.context = this
 	return result
 }
@@ -264,7 +259,6 @@ func (this *Context) NotFound() *NotFoundResult {
 func (this *Context) Redirect(url string) *RedirectResult {
 	var result = new(RedirectResult)
 	result.Status = 302
-	result.ContentType = ""
 	result.context = this
 	result.url = url
 	return result
@@ -274,7 +268,6 @@ func (this *Context) Redirect(url string) *RedirectResult {
 func (this *Context) RedirectPermanently(url string) *RedirectResult {
 	var result = new(RedirectResult)
 	result.Status = 301
-	result.ContentType = ""
 	result.context = this
 	result.url = url
 	return result
@@ -284,7 +277,6 @@ func (this *Context) RedirectPermanently(url string) *RedirectResult {
 func (this *Context) Data(data []byte) *DataResult {
 	var result = new(DataResult)
 	result.Status = 200
-	result.ContentType = ""
 	result.data = data
 	return result
 }
@@ -293,7 +285,6 @@ func (this *Context) Data(data []byte) *DataResult {
 func (this *Context) View(path string, data ...interface{}) *ViewResult {
 	var result = new(ViewResult)
 	result.Status = 200
-	result.ContentType = ""
 	result.templates = this.Processor.Templates
 	result.path = path
 	data = append(data, this.commonViewData())
@@ -305,7 +296,6 @@ func (this *Context) View(path string, data ...interface{}) *ViewResult {
 func (this *Context) PartialView(path string, data ...interface{}) *PartialViewResult {
 	var result = new(PartialViewResult)
 	result.Status = 200
-	result.ContentType = ""
 	result.templates = this.Processor.Templates
 	result.path = path
 	data = append(data, this.commonViewData())

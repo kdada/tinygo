@@ -3,8 +3,13 @@ package web
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 // 可用于默认http方法(默认为Post)的返回结果
@@ -68,14 +73,14 @@ func (this *commonHttpResult) Message() string {
 
 // WriteHeader 写入响应头信息
 func (this *commonHttpResult) WriteHeader(writer io.Writer) (http.ResponseWriter, error) {
-	var r, ok = writer.(http.ResponseWriter)
+	var w, ok = writer.(http.ResponseWriter)
 	if !ok {
 		return nil, ErrorInvalidWriter.Error()
 	}
 	if this.ContentType != "" {
-		r.Header().Set("Content-Type", this.ContentType)
+		w.Header().Set("Content-Type", this.ContentType)
 	}
-	return r, nil
+	return w, nil
 }
 
 // 文件结果
@@ -87,11 +92,62 @@ type FileResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *FileResult) WriteTo(writer io.Writer) error {
-	var r, ok = writer.(http.ResponseWriter)
+	var w, ok = writer.(http.ResponseWriter)
 	if !ok {
 		return ErrorInvalidWriter.Error()
 	}
-	http.ServeFile(r, this.context.HttpContext.Request, this.filePath)
+	var f, e = os.Open(this.filePath)
+	if e != nil {
+		return e
+	}
+	var info, err = f.Stat()
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		err = this.dir(this.context.HttpContext.Request, w, f, info)
+	} else {
+		err = this.file(this.context.HttpContext.Request, w, f, info)
+	}
+	return err
+}
+
+// file 处理普通文件类型
+func (this *FileResult) file(r *http.Request, w http.ResponseWriter, f *os.File, info os.FileInfo) error {
+	http.ServeContent(w, r, f.Name(), info.ModTime(), f)
+	return nil
+}
+
+// html标记替换器
+var htmlReplacer = strings.NewReplacer(
+	"&", "&amp;",
+	"<", "&lt;",
+	">", "&gt;",
+	`"`, "&#34;",
+	"'", "&#39;",
+)
+
+// dir 处理目录类型
+func (this *FileResult) dir(r *http.Request, w http.ResponseWriter, f *os.File, info os.FileInfo) error {
+	var dirs, err = f.Readdir(0)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, "<pre>\n")
+	for _, d := range dirs {
+		name := d.Name()
+		if d.IsDir() {
+			name += "/"
+		}
+		var u = url.URL{Path: name}
+
+		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", filepath.Join(r.URL.Path, u.String()), htmlReplacer.Replace(name))
+	}
+	fmt.Fprintf(w, "</pre>\n")
+	fmt.Fprintf(w, `
+
+	`)
 	return nil
 }
 
@@ -104,7 +160,7 @@ type JsonResult struct {
 // WriteTo 将Result的内容写入writer
 func (this *JsonResult) WriteTo(writer io.Writer) error {
 	this.ContentType = "application/json; charset=utf-8"
-	var r, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.commonHttpResult.WriteHeader(writer)
 	if err != nil {
 		return err
 	}
@@ -112,7 +168,7 @@ func (this *JsonResult) WriteTo(writer io.Writer) error {
 	if e != nil {
 		return e
 	}
-	_, e = r.Write(bytes)
+	_, e = w.Write(bytes)
 	return e
 }
 
@@ -125,7 +181,7 @@ type XmlResult struct {
 // WriteTo 将Result的内容写入writer
 func (this *XmlResult) WriteTo(writer io.Writer) error {
 	this.ContentType = "application/xml; charset=utf-8"
-	var r, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.commonHttpResult.WriteHeader(writer)
 	if err != nil {
 		return err
 	}
@@ -133,7 +189,7 @@ func (this *XmlResult) WriteTo(writer io.Writer) error {
 	if e != nil {
 		return e
 	}
-	_, e = r.Write(bytes)
+	_, e = w.Write(bytes)
 	return e
 }
 
@@ -178,11 +234,11 @@ type DataResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *DataResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.commonHttpResult.WriteHeader(writer)
 	if err != nil {
 		return err
 	}
-	_, err = r.Write(this.data)
+	_, err = w.Write(this.data)
 	return err
 }
 
@@ -196,11 +252,11 @@ type ViewResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *ViewResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.commonHttpResult.WriteHeader(writer)
 	if err != nil {
 		return err
 	}
-	return this.templates.ExecView(r, this.path, this.data)
+	return this.templates.ExecView(w, this.path, this.data)
 }
 
 // 部分视图结果
@@ -213,11 +269,11 @@ type PartialViewResult struct {
 
 // WriteTo 将Result的内容写入writer
 func (this *PartialViewResult) WriteTo(writer io.Writer) error {
-	var r, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.commonHttpResult.WriteHeader(writer)
 	if err != nil {
 		return err
 	}
-	return this.templates.ExecPartialView(r, this.path, this.data)
+	return this.templates.ExecPartialView(w, this.path, this.data)
 }
 
 // 自定义返回结果

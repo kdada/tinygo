@@ -7,25 +7,6 @@ import (
 	"strings"
 )
 
-// http Content-Type,建立文件扩展名和内容类型的关系
-var contentType = map[string]string{
-	"apk": "application/vnd.android.package-archive",
-}
-
-// SetContentType 设置指定扩展名对应的http内容类型
-func SetContentType(ext, ct string) {
-	contentType[ext] = ct
-}
-
-// ContentType 获取指定扩展名对应的http内容类型
-func ContentType(ext string) string {
-	var ct, ok = contentType[strings.ToLower(ext)]
-	if !ok {
-		return ""
-	}
-	return ct
-}
-
 // 静态文件执行器
 type StaticExecutor struct {
 	CommonExecutor

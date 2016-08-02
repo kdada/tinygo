@@ -172,7 +172,7 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 		}
 	}
 	boolValue, err = global.Bool("List")
-	if err != nil {
+	if err == nil {
 		httpCfg.List = boolValue
 	}
 	strValue, err = global.String("View")
