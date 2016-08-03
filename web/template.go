@@ -11,7 +11,7 @@ import (
 // 视图配置
 type ViewConfig struct {
 	LayoutMap     map[string]string //为布局文件定义别名,map[布局文件别名]布局文件路径
-	DefaultLayout string            //默认布局文件别名
+	DefaultLayout string            //默认布局文件别名,默认布局仅对非布局文件有效
 	LayoutSpec    map[string]string //特别指定目录或文件对应的布局文件,map[目录或文件路径]布局文件别名
 }
 
@@ -80,9 +80,14 @@ func (this *ViewTemplates) layout(path string) (string, bool) {
 	if !ok {
 		var dir = filepath.Dir(path)
 		layout, ok = this.config.LayoutSpec[dir]
-		if !ok {
+		// 如果path指向的是布局文件则不使用DefaultLayout
+		if !ok && !this.isLayout(path) {
+			ok = true
 			layout = this.config.DefaultLayout
 		}
+	}
+	if !ok || layout == "" {
+		return "", false
 	}
 	layout, ok = this.config.LayoutMap[layout]
 	if path == layout {
