@@ -16,6 +16,12 @@ func init() {
 	RegisterFunc("!=", neF)
 	RegisterFunc("==", eqS)
 	RegisterFunc("!=", neS)
+	RegisterFunc("len<", lenLtI)
+	RegisterFunc("len<=", lenLeI)
+	RegisterFunc("len>", lenGtI)
+	RegisterFunc("len>=", lenGeI)
+	RegisterFunc("len==", lenEqI)
+	RegisterFunc("len!=", lenNeI)
 
 	Register("string", NewStringValidator)
 }

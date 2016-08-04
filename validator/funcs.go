@@ -85,3 +85,33 @@ func eqS(str string, l string) bool {
 func neS(str string, l string) bool {
 	return str == l
 }
+
+// lenLtI < int64
+func lenLtI(str string, l int64) bool {
+	return len(str) < int(l)
+}
+
+// lenLeI <= int64
+func lenLeI(str string, l int64) bool {
+	return len(str) <= int(l)
+}
+
+// lenGtI > int64
+func lenGtI(str string, l int64) bool {
+	return len(str) > int(l)
+}
+
+// lenGeI >= int64
+func lenGeI(str string, l int64) bool {
+	return len(str) >= int(l)
+}
+
+// lenEqI == int64
+func lenEqI(str string, l int64) bool {
+	return len(str) == int(l)
+}
+
+// lenNeI != int64
+func lenNeI(str string, l int64) bool {
+	return len(str) != int(l)
+}
