@@ -35,7 +35,7 @@ func (this *DefaultHttpProcessorEvent) RequestFinish(processor *HttpProcessor, c
 			if ok2 {
 				var err = context.WriteResult(w)
 				if err != nil {
-					this.Error(processor, context, err)
+					processor.Event.Error(processor, context, err)
 				}
 			}
 		}
