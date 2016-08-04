@@ -7,44 +7,45 @@ import (
 	"strings"
 
 	"github.com/kdada/tinygo/config"
+	"github.com/kdada/tinygo/template"
 )
 
 // Http配置
 type HttpConfig struct {
-	Root              string      //应用根目录
-	App               string      //应用名称
-	Https             bool        //是否启用https,可选,默认为false
-	Port              int         //监听端口,可选,默认为80，https为true则默认为443
-	Cert              string      //证书(PEM)路径,如果启用了https则必填
-	PrivateKey        string      //私钥(PEM)路径,如果启用了https则必填
-	Home              string      //首页地址
-	Session           bool        //是否启用session
-	SessionType       string      //session类型,参考tinygo/session,默认为memory
-	SessionSource     string      //session源,参考tinygo/session,默认为空
-	SessionExpire     int         //session过期时间,单位为秒
-	SessionCookieName string      //Session Cookie名
-	CSRF              bool        //是否启用csrf
-	CSRFType          string      //session类型,参考tinygo/session,默认为memory
-	CSRFSource        string      //session源,参考tinygo/session,默认为空
-	CSRFExpire        int         //csrf token过期时间,单位为秒
-	CSRFCookieName    string      //csrf Cookie 名
-	CSRFTokenName     string      //csrf 表单名
-	Static            []string    //静态文件目录,默认为"content"
-	List              bool        //静态文件目录是否允许显示目录列表,默认为false
-	View              string      //视图文件目录,默认为"views"
-	Precompile        bool        //是否预编译视图,默认为false
-	Api               string      //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
-	Favicon           string      //网站图标路径
-	Robots            string      //爬虫协议文件路径
-	Log               bool        //是否启用日志
-	LogType           string      //日志类型,可以为console或file
-	LogPath           string      //日志路径,日志类型为file的时候需要
-	LogAsync          bool        //异步日志,默认为false
-	LayoutConfigPath  string      //布局配置文件名
-	TemplateExt       string      //视图文件扩展名
-	TemplateName      string      //模板文件内部分模板名,用于返回部分视图时使用
-	MaxRequestMemory  int         //单次请求最大占用内存大小,默认32 MB
-	ViewConfig        *ViewConfig //视图配置
+	Root              string                   //应用根目录
+	App               string                   //应用名称
+	Https             bool                     //是否启用https,可选,默认为false
+	Port              int                      //监听端口,可选,默认为80，https为true则默认为443
+	Cert              string                   //证书(PEM)路径,如果启用了https则必填
+	PrivateKey        string                   //私钥(PEM)路径,如果启用了https则必填
+	Home              string                   //首页地址
+	Session           bool                     //是否启用session
+	SessionType       string                   //session类型,参考tinygo/session,默认为memory
+	SessionSource     string                   //session源,参考tinygo/session,默认为空
+	SessionExpire     int                      //session过期时间,单位为秒
+	SessionCookieName string                   //Session Cookie名
+	CSRF              bool                     //是否启用csrf
+	CSRFType          string                   //session类型,参考tinygo/session,默认为memory
+	CSRFSource        string                   //session源,参考tinygo/session,默认为空
+	CSRFExpire        int                      //csrf token过期时间,单位为秒
+	CSRFCookieName    string                   //csrf Cookie 名
+	CSRFTokenName     string                   //csrf 表单名
+	Static            []string                 //静态文件目录,默认为"content"
+	List              bool                     //静态文件目录是否允许显示目录列表,默认为false
+	View              string                   //视图文件目录,默认为"views"
+	Precompile        bool                     //是否预编译视图,默认为false
+	Api               string                   //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
+	Favicon           string                   //网站图标路径
+	Robots            string                   //爬虫协议文件路径
+	Log               bool                     //是否启用日志
+	LogType           string                   //日志类型,可以为console或file
+	LogPath           string                   //日志路径,日志类型为file的时候需要
+	LogAsync          bool                     //异步日志,默认为false
+	LayoutConfigPath  string                   //布局配置文件名
+	TemplateExt       string                   //视图文件扩展名
+	TemplateName      string                   //模板文件内部分模板名,用于返回部分视图时使用
+	MaxRequestMemory  int                      //单次请求最大占用内存大小,默认32 MB
+	TemplateConfig    *template.TemplateConfig //视图模板配置
 }
 
 // NewHttpConfig 创建默认的Http配置
@@ -83,7 +84,7 @@ func NewHttpConfig() *HttpConfig {
 		CSRFCookieName:    "xid",
 		CSRFTokenName:     "csrf",
 		MaxRequestMemory:  32 << 20,
-		ViewConfig:        &ViewConfig{make(map[string]string), "", make(map[string]string)},
+		TemplateConfig:    template.NewTemplateConfig(),
 	}
 }
 
@@ -165,11 +166,6 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 	strValue, err = global.String("Static")
 	if err == nil {
 		httpCfg.Static = strings.Split(strValue, ";")
-		//路径规范化
-		// \content\css ==> content/css
-		for i, p := range httpCfg.Static {
-			httpCfg.Static[i] = NormalizePath(p)
-		}
 	}
 	boolValue, err = global.Bool("List")
 	if err == nil {
@@ -246,28 +242,15 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = json.Unmarshal(content, &httpCfg.ViewConfig)
+		err = json.Unmarshal(content, &httpCfg.TemplateConfig)
 		if err != nil {
 			return nil, err
 		}
-		//路径规范化,相对于{Config.View}所指定的目录
-		for k, v := range httpCfg.ViewConfig.LayoutMap {
-			httpCfg.ViewConfig.LayoutMap[k] = NormalizePath(v)
-		}
-		for k, v := range httpCfg.ViewConfig.LayoutSpec {
-			delete(httpCfg.ViewConfig.LayoutSpec, k)
-			httpCfg.ViewConfig.LayoutSpec[NormalizePath(k)] = v
-		}
+		httpCfg.TemplateConfig.Clear()
 	}
-
+	// 设置模板配置信息
+	httpCfg.TemplateConfig.SetBasePath(httpCfg.View)
+	httpCfg.TemplateConfig.SetPartialName(httpCfg.TemplateName)
+	httpCfg.TemplateConfig.SetTemplateExt(httpCfg.TemplateExt)
 	return httpCfg, nil
-}
-
-// NormalizePath 规范化路径
-// 规范化后统一使用/分隔符,所有绝对路径全部变为相对路径
-//
-// 例如:
-//  \test\test.html ==> test/test.html
-func NormalizePath(path string) string {
-	return strings.Trim(strings.Replace(path, "\\", "/", -1), "/")
 }

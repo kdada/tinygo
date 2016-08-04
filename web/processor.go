@@ -10,6 +10,7 @@ import (
 	"github.com/kdada/tinygo/log"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
+	"github.com/kdada/tinygo/template"
 )
 
 // 参数类型方法
@@ -24,7 +25,7 @@ type HttpProcessor struct {
 	CSRFContainer    session.SessionContainer //Csrf容器
 	Funcs            map[string]ParamTypeFunc //参数生成方法
 	DefaultFunc      ParamTypeFunc            //当Funcs中不存在指定类型的方法时,使用该方法处理
-	Templates        *ViewTemplates           //视图模板信息
+	Templates        *template.ViewTemplates  //视图模板信息
 	Event            HttpProcessorEvent       //处理器事件
 }
 
@@ -64,7 +65,7 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	register(processor.Funcs)
 	processor.DefaultFunc = DefaultFunc
 	//创建视图模板信息
-	processor.Templates = NewViewTemplates(config.View, config.ViewConfig, config.TemplateName, config.TemplateExt, commonFuncMap)
+	processor.Templates = template.NewViewTemplates(config.TemplateConfig)
 	if config.Precompile {
 		//预编译模板
 		var err = processor.Templates.CompileAll()

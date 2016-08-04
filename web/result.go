@@ -10,6 +10,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/kdada/tinygo/template"
 )
 
 // 可用于默认http方法(默认为Post)的返回结果
@@ -246,7 +248,7 @@ func (this *DataResult) WriteTo(writer io.Writer) error {
 // 视图结果
 type ViewResult struct {
 	commonHttpResult
-	templates *ViewTemplates
+	templates *template.ViewTemplates
 	path      string
 	data      interface{}
 }
@@ -263,7 +265,7 @@ func (this *ViewResult) WriteTo(writer io.Writer) error {
 // 部分视图结果
 type PartialViewResult struct {
 	commonHttpResult
-	templates *ViewTemplates
+	templates *template.ViewTemplates
 	path      string
 	data      interface{}
 }
