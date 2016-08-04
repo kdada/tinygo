@@ -389,40 +389,63 @@ func NewTemplateSession(sess session.Session) *TemplateSession {
 	return &TemplateSession{sess}
 }
 
+// Contains 确认Session中是否包含该key
+func (this *TemplateSession) Contains(key string) bool {
+	var _, ok = this.sess.Value(key)
+	return ok
+}
+
+// SetDefault 设置默认值,当且仅当key不存在时设置成功
+func (this *TemplateSession) SetDefault(key string, value interface{}) string {
+	if !this.Contains(key) {
+		this.sess.SetValue(key, value)
+	}
+	return ""
+}
+
+// Value 获取值
+func (this *TemplateSession) Value(key string) interface{} {
+	var v, ok = this.sess.Value(key)
+	if ok {
+		return v
+	}
+	return nil
+}
+
 // String 获取字符串
-func (this *TemplateSession) String(key string) (string, error) {
+func (this *TemplateSession) String(key string) string {
 	var v, ok = this.sess.String(key)
 	if ok {
-		return v, nil
+		return v
 	}
-	return "", ErrorInvalidKey.Format(key).Error()
+	return ""
 }
 
 //  Int 获取整数值
-func (this *TemplateSession) Int(key string) (int, error) {
+func (this *TemplateSession) Int(key string) int {
 	var v, ok = this.sess.Int(key)
 	if ok {
-		return v, nil
+		return v
 	}
-	return 0, ErrorInvalidKey.Format(key).Error()
+	return 0
 }
 
 // Bool 获取bool值
-func (this *TemplateSession) Bool(key string) (bool, error) {
+func (this *TemplateSession) Bool(key string) bool {
 	var v, ok = this.sess.Bool(key)
 	if ok {
-		return v, nil
+		return v
 	}
-	return false, ErrorInvalidKey.Format(key).Error()
+	return false
 }
 
 // Float 获取浮点值
-func (this *TemplateSession) Float(key string) (float64, error) {
+func (this *TemplateSession) Float(key string) float64 {
 	var v, ok = this.sess.Float(key)
 	if ok {
-		return v, nil
+		return v
 	}
-	return 0.0, ErrorInvalidKey.Format(key).Error()
+	return 0.0
 }
 
 // 模板CSRF信息
