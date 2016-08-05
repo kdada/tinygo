@@ -5,11 +5,13 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	"github.com/kdada/tinygo/router"
 )
 
 // 静态文件执行器
 type StaticExecutor struct {
-	CommonExecutor
+	router.BaseRouterExecutor
 	path string
 }
 
@@ -25,7 +27,7 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
-		if this.ExecutePreFilters() {
+		return this.FilterExecute(func() (interface{}, error) {
 			var result Result = nil
 			if context.HttpContext.Request.Method == "GET" {
 				//返回文件
@@ -61,18 +63,15 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 			if result == nil {
 				result = context.NotFound()
 			}
-			//执行过滤器
-			if this.ExecutePostFilters(result) {
-				return result, nil
-			}
-		}
+			return result, nil
+		})
 	}
 	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
 }
 
 // 文件执行器,用于返回特定文件
 type FileExecutor struct {
-	CommonExecutor
+	router.BaseRouterExecutor
 	path string
 }
 
@@ -88,14 +87,9 @@ func (this *FileExecutor) Execute() (interface{}, error) {
 	var context, ok = this.Context.(*Context)
 	if ok {
 		context.End = this.End
-		if this.ExecutePreFilters() {
-			//返回文件
-			var file = context.File(this.path)
-			//执行过滤器
-			if this.ExecutePostFilters(file) {
-				return file, nil
-			}
-		}
+		return this.FilterExecute(func() (interface{}, error) {
+			return context.File(this.path), nil
+		})
 	}
 	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
 }
