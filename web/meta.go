@@ -55,7 +55,10 @@ func (this *FieldMetadata) Set(instance reflect.Value, param ValueProvider) erro
 					valid = this.Validator.Validate(v)
 					if !valid {
 						if this.Kind == FieldKindRequired {
-							return ErrorFieldNotValid.Format(this.Name, i).Error()
+							if len(strs) == 1 {
+								return ErrorFieldNotValid.Format(this.Name).Error()
+							}
+							return ErrorFieldsNotValid.Format(this.Name, i).Error()
 						}
 						break
 					}
@@ -253,16 +256,32 @@ func ForeachField(instance reflect.Type, solve func(field reflect.StructField) e
 		instance = instance.Elem()
 	}
 	if instance.Kind() == reflect.Struct {
-		for i := 0; i < instance.NumField(); i++ {
-			var field = instance.Field(i)
-			if (field.Name[0] >= 'A') && (field.Name[0] <= 'Z') {
-				if field.Anonymous {
-					ForeachField(field.Type, solve)
-				} else {
-					var err = solve(field)
-					if err != nil {
-						return err
-					}
+		var preIndex = make([]int, 0, 2)
+		return foreachField(preIndex, instance, solve)
+	}
+	return nil
+}
+
+// foreachField 遍历instance的所有字段(包括匿名字段,但不包括私有字段),instance必须是结构体或结构体指针类型
+func foreachField(preIndex []int, instance reflect.Type, solve func(field reflect.StructField) error) error {
+	for i := 0; i < instance.NumField(); i++ {
+		var field = instance.Field(i)
+		if (field.Name[0] >= 'A') && (field.Name[0] <= 'Z') {
+			if field.Anonymous {
+				preIndex = append(preIndex, i)
+				foreachField(preIndex, field.Type, solve)
+				preIndex = preIndex[:len(preIndex)-1]
+			} else {
+				var lenPI = len(preIndex)
+				if lenPI > 0 {
+					var index = make([]int, lenPI+len(field.Index))
+					copy(index, preIndex)
+					copy(index[lenPI:], field.Index)
+					field.Index = index
+				}
+				var err = solve(field)
+				if err != nil {
+					return err
 				}
 			}
 		}
