@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/kdada/tinygo/connector"
+	"github.com/kdada/tinygo/meta"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
 	"github.com/kdada/tinygo/util"
@@ -330,7 +331,7 @@ func (this *Context) integrate(data ...interface{}) ViewData {
 					result[k] = v
 				}
 			}
-		} else if IsStructPtrType(outputType) {
+		} else if meta.IsStructPtrType(outputType) {
 			this.mapTo(reflect.ValueOf(output).Elem(), result)
 		}
 	}

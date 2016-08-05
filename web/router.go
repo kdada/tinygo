@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/kdada/tinygo/meta"
 	"github.com/kdada/tinygo/router"
 )
 
@@ -33,13 +34,13 @@ func NewRootRouter() router.Router {
 //  return:执行成功则返回router.Router
 func NewControllerRouter(instance interface{}) router.Router {
 	var instanceType = reflect.TypeOf(instance)
-	if !IsStructPtrType(instanceType) {
+	if !meta.IsStructPtrType(instanceType) {
 		panic(ErrorNotStructPtr.Format(instanceType.String()).Error())
 	}
-	var methods = make([]*MethodMetadata, 0)
+	var methods = make([]*meta.MethodMetadata, 0)
 	//遍历控制器方法
-	var err = ForeachMethod(instanceType, func(method reflect.Method) error {
-		var mMd, err = AnalyzeControllerMethod(method)
+	var err = meta.ForeachMethod(instanceType, func(method reflect.Method) error {
+		var mMd, err = meta.AnalyzeStructMethod(&method)
 		if err != nil {
 			return err
 		}
@@ -77,7 +78,8 @@ func NewControllerRouter(instance interface{}) router.Router {
 //   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
 //  return:执行成功则返回router.Router
 func NewFuncRouter(name string, function interface{}) router.Router {
-	var mMd, err = AnalyzeMethod(name, reflect.ValueOf(function))
+	var v = reflect.ValueOf(function)
+	var mMd, err = meta.AnalyzeMethod(name, &v)
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +104,8 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 //   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
 //  return:执行成功则返回router.Router
 func NewMutableFuncRouter(name string, function interface{}) router.Router {
-	var mMd, err = AnalyzeMethod(name, reflect.ValueOf(function))
+	var v = reflect.ValueOf(function)
+	var mMd, err = meta.AnalyzeMethod(name, &v)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +152,7 @@ func NewStaticRouter(name string, path string) router.Router {
 }
 
 // 检查元数据的第一个返回值是否符合web.Result接口
-func CheckResult(m *MethodMetadata) error {
+func CheckResult(m *meta.MethodMetadata) error {
 	if len(m.Return) <= 0 {
 		return ErrorNoReturn.Format(m.Name).Error()
 	}

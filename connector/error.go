@@ -26,8 +26,8 @@ func (this Error) String() string {
 // 错误码
 const (
 	ErrorInvalidConnectorCreator Error = "ErrorInvalidConnectorCreator(N10000):无效的连接创建器"
-	ErrorInvalidKind             Error = "ErrorInvalidKind(L10010):无效的连接类型(%s)"
-	ErrorFailToStop              Error = "ErrorFailToStop(L10020):无法停止连接器(%s)"
-	ErrorInvalidDispatcher       Error = "ErrorInvalidDispatcher(L10030):无效的Dispatcher,无法启动Connector(%s)"
-	ErrorParamNotFound           Error = "ErrorParamNotFound(L10100):source中没有%s,无法创建https连接器"
+	ErrorInvalidKind             Error = "ErrorInvalidKind(N10010):无效的连接类型(%s)"
+	ErrorFailToStop              Error = "ErrorFailToStop(N10020):无法停止连接器(%s)"
+	ErrorInvalidDispatcher       Error = "ErrorInvalidDispatcher(N10030):无效的Dispatcher,无法启动Connector(%s)"
+	ErrorParamNotFound           Error = "ErrorParamNotFound(N10100):source中没有%s,无法创建https连接器"
 )

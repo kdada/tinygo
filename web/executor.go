@@ -3,6 +3,7 @@ package web
 import (
 	"reflect"
 
+	"github.com/kdada/tinygo/meta"
 	"github.com/kdada/tinygo/router"
 )
 
@@ -37,11 +38,11 @@ func (this *SimpleExecutor) Execute() (interface{}, error) {
 // 高级执行器
 type AdvancedExecutor struct {
 	router.BaseRouterExecutor
-	Method *MethodMetadata //执行方法
+	Method *meta.MethodMetadata //执行方法
 }
 
 // NewAdvancedExecutor 创建高级执行器
-func NewAdvancedExecutor(method *MethodMetadata) *AdvancedExecutor {
+func NewAdvancedExecutor(method *meta.MethodMetadata) *AdvancedExecutor {
 	var ae = new(AdvancedExecutor)
 	ae.Method = method
 	return ae
@@ -53,7 +54,7 @@ func (this *AdvancedExecutor) Execute() (interface{}, error) {
 	if ok {
 		context.End = this.End
 		return this.FilterExecute(func() (interface{}, error) {
-			return this.Method.Call(&ContextValueProvider{context})
+			return this.Method.Generate(&ContextValueProvider{context})
 		})
 	}
 	return nil, ErrorInvalidContext.Format(reflect.TypeOf(this.Context).String()).Error()
@@ -66,8 +67,18 @@ type ContextValueProvider struct {
 }
 
 // String 根据名称和类型返回相应的字符串值,返回的bool表示该值是否存在
-func (this *ContextValueProvider) String(name string, t reflect.Type) ([]string, bool) {
-	return this.context.Values(name)
+func (this *ContextValueProvider) Contains(name string, t reflect.Type) bool {
+	if t.String() == "*web.Context" {
+		return true
+	}
+	var _, ok = this.context.Values(name)
+	return ok
+}
+
+// String 根据名称和类型返回相应的字符串值,返回的bool表示该值是否存在
+func (this *ContextValueProvider) String(name string, t reflect.Type) []string {
+	var v, _ = this.context.Values(name)
+	return v
 }
 
 // Value 根据名称和类型生成相应类型的数据,使用HttpProcessor中定义的参数生成方法
