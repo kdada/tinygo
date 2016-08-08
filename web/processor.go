@@ -100,6 +100,16 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	return processor, nil
 }
 
+// RegisterFinder 注册单一类型的值查找器
+func (this *HttpProcessor) RegisterFinder(t reflect.Type, finder ContextValueFinder) {
+	this.Finders[t.String()] = finder
+}
+
+// RegisterMutiTypeFinder 注册多类型的值查找器
+func (this *HttpProcessor) RegisterMutiTypeFinder(finder ContextValueFinder) {
+	this.MutiTypeFinders = append(this.MutiTypeFinders, finder)
+}
+
 // createCookie 创建cookie
 func (this *HttpProcessor) createCookie(name string, id string, expire int) *http.Cookie {
 	var cookieValue = new(http.Cookie)
@@ -112,21 +122,6 @@ func (this *HttpProcessor) createCookie(name string, id string, expire int) *htt
 		cookieValue.Expires = time.Now().Add(time.Second * time.Duration(expire))
 	}
 	return cookieValue
-}
-
-// addCookie 添加cookie
-func (this *HttpProcessor) addCookie(context *Context, cookie *http.Cookie) {
-	context.HttpContext.ResponseWriter.Header().Add("Set-Cookie", cookie.String())
-}
-
-// RegisterFinder 注册单一类型的值查找器
-func (this *HttpProcessor) RegisterFinder(t reflect.Type, finder ContextValueFinder) {
-	this.Finders[t.String()] = finder
-}
-
-// RegisterMutiTypeFinder 注册多类型的值查找器
-func (this *HttpProcessor) RegisterMutiTypeFinder(finder ContextValueFinder) {
-	this.MutiTypeFinders = append(this.MutiTypeFinders, finder)
 }
 
 // ResolveSession 处理会话相关内容
