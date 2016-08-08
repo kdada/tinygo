@@ -82,6 +82,9 @@ SessionExpire = 1800
 #Session Cookie名,默认为ssid
 SessionCookieName = blog_ssid
 
+#Session Cookie的过期时间,单位为秒,默认为0(0表示浏览器关闭后过期)
+#SessionCookieExpire
+
 #是否启用CSRF,默认为false
 CSRF = true
 
@@ -100,6 +103,9 @@ CSRFCookieName = blog_xid
 
 #CSRF 表单字段名,默认为csrf
 CSRFTokenName = __xfield
+
+#CSRF Cookie的过期时间,单位为秒,默认为0(0表示浏览器关闭后过期)
+#CSRFCookieExpire
 
 #静态文件目录,默认为content,多个目录用;分隔,最后一级目录名不能重复
 Static = app/js;app/css;app/tmpl

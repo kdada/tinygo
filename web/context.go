@@ -82,6 +82,20 @@ func NewContext(segments []string, context *connector.HttpContext) (*Context, er
 	return c, nil
 }
 
+// AddCookie 添加Cookie
+func (this *Context) AddCookie(cookie *http.Cookie) {
+	this.HttpContext.ResponseWriter.Header().Add("Set-Cookie", cookie.String())
+}
+
+// Cookie 获取Cookie
+func (this *Context) Cookie(name string) (*http.Cookie, bool) {
+	var c, err = this.HttpContext.Request.Cookie(name)
+	if err != nil {
+		return nil, false
+	}
+	return c, true
+}
+
 // Value 返回值
 func (this *Context) Value(name string) (string, bool) {
 	return this.HttpContext.Request.Form.Get(name), true

@@ -12,80 +12,84 @@ import (
 
 // Http配置
 type HttpConfig struct {
-	Config            config.Config            //配置信息
-	Root              string                   //应用根目录
-	App               string                   //应用名称
-	Https             bool                     //是否启用https,可选,默认为false
-	Port              int                      //监听端口,可选,默认为80，https为true则默认为443
-	Cert              string                   //证书(PEM)路径,如果启用了https则必填
-	PrivateKey        string                   //私钥(PEM)路径,如果启用了https则必填
-	Home              string                   //首页地址
-	Session           bool                     //是否启用session
-	SessionType       string                   //session类型,参考tinygo/session,默认为memory
-	SessionSource     string                   //session源,参考tinygo/session,默认为空
-	SessionExpire     int                      //session过期时间,单位为秒
-	SessionCookieName string                   //Session Cookie名
-	CSRF              bool                     //是否启用csrf
-	CSRFType          string                   //session类型,参考tinygo/session,默认为memory
-	CSRFSource        string                   //session源,参考tinygo/session,默认为空
-	CSRFExpire        int                      //csrf token过期时间,单位为秒
-	CSRFCookieName    string                   //csrf Cookie 名
-	CSRFTokenName     string                   //csrf 表单名
-	Static            []string                 //静态文件目录,默认为"content"
-	List              bool                     //静态文件目录是否允许显示目录列表,默认为false
-	View              string                   //视图文件目录,默认为"views"
-	Precompile        bool                     //是否预编译视图,默认为false
-	Api               string                   //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
-	Favicon           string                   //网站图标路径
-	Robots            string                   //爬虫协议文件路径
-	Log               bool                     //是否启用日志
-	LogType           string                   //日志类型,可以为console或file
-	LogPath           string                   //日志路径,日志类型为file的时候需要
-	LogAsync          bool                     //异步日志,默认为false
-	LayoutConfigPath  string                   //布局配置文件名
-	TemplateExt       string                   //视图文件扩展名
-	TemplateName      string                   //模板文件内部分模板名,用于返回部分视图时使用
-	MaxRequestMemory  int                      //单次请求最大占用内存大小,默认32 MB
-	TemplateConfig    *template.TemplateConfig //视图模板配置
+	Config              config.Config            //配置信息
+	Root                string                   //应用根目录
+	App                 string                   //应用名称
+	Https               bool                     //是否启用https,可选,默认为false
+	Port                int                      //监听端口,可选,默认为80，https为true则默认为443
+	Cert                string                   //证书(PEM)路径,如果启用了https则必填
+	PrivateKey          string                   //私钥(PEM)路径,如果启用了https则必填
+	Home                string                   //首页地址
+	Session             bool                     //是否启用session
+	SessionType         string                   //session类型,参考tinygo/session,默认为memory
+	SessionSource       string                   //session源,参考tinygo/session,默认为空
+	SessionExpire       int                      //session过期时间,单位为秒
+	SessionCookieName   string                   //Session Cookie名
+	SessionCookieExpire int                      //Session Cookie的过期时间,单位为秒,默认为0(0表示浏览器关闭后过期)
+	CSRF                bool                     //是否启用csrf
+	CSRFType            string                   //session类型,参考tinygo/session,默认为memory
+	CSRFSource          string                   //session源,参考tinygo/session,默认为空
+	CSRFExpire          int                      //csrf token过期时间,单位为秒
+	CSRFCookieName      string                   //csrf Cookie 名
+	CSRFTokenName       string                   //csrf 表单名
+	CSRFCookieExpire    int                      //csrf Cookie的过期时间,单位为秒,默认为0(0表示浏览器关闭后过期)
+	Static              []string                 //静态文件目录,默认为"content"
+	List                bool                     //静态文件目录是否允许显示目录列表,默认为false
+	View                string                   //视图文件目录,默认为"views"
+	Precompile          bool                     //是否预编译视图,默认为false
+	Api                 string                   //使用Api返回的数据的解析格式,默认为auto(其他设置包括json,xml)
+	Favicon             string                   //网站图标路径
+	Robots              string                   //爬虫协议文件路径
+	Log                 bool                     //是否启用日志
+	LogType             string                   //日志类型,可以为console或file
+	LogPath             string                   //日志路径,日志类型为file的时候需要
+	LogAsync            bool                     //异步日志,默认为false
+	LayoutConfigPath    string                   //布局配置文件名
+	TemplateExt         string                   //视图文件扩展名
+	TemplateName        string                   //模板文件内部分模板名,用于返回部分视图时使用
+	MaxRequestMemory    int                      //单次请求最大占用内存大小,默认32 MB
+	TemplateConfig      *template.TemplateConfig //视图模板配置
 }
 
 // NewHttpConfig 创建默认的Http配置
 func NewHttpConfig() *HttpConfig {
 	// Http配置
 	return &HttpConfig{
-		App:               "app",
-		Https:             false,
-		Port:              80,
-		Cert:              "",
-		PrivateKey:        "",
-		Home:              "",
-		Session:           true,
-		SessionType:       "memory",
-		SessionSource:     "",
-		SessionExpire:     1800,
-		CSRF:              false,
-		CSRFType:          "memory",
-		CSRFSource:        "",
-		CSRFExpire:        300,
-		Static:            []string{"content"},
-		List:              false,
-		View:              "views",
-		Precompile:        false,
-		Api:               "json",
-		Favicon:           "favicon.ico",
-		Robots:            "robots.txt",
-		Log:               true,
-		LogType:           "console",
-		LogPath:           "",
-		LogAsync:          false,
-		LayoutConfigPath:  "",
-		TemplateExt:       "html",
-		TemplateName:      "Content",
-		SessionCookieName: "ssid",
-		CSRFCookieName:    "xid",
-		CSRFTokenName:     "csrf",
-		MaxRequestMemory:  32 << 20,
-		TemplateConfig:    template.NewTemplateConfig(),
+		App:                 "app",
+		Https:               false,
+		Port:                80,
+		Cert:                "",
+		PrivateKey:          "",
+		Home:                "",
+		Session:             true,
+		SessionType:         "memory",
+		SessionSource:       "",
+		SessionExpire:       1800,
+		SessionCookieName:   "ssid",
+		SessionCookieExpire: 0,
+		CSRF:                false,
+		CSRFType:            "memory",
+		CSRFSource:          "",
+		CSRFExpire:          300,
+		CSRFCookieName:      "xid",
+		CSRFTokenName:       "csrf",
+		CSRFCookieExpire:    0,
+		Static:              []string{"content"},
+		List:                false,
+		View:                "views",
+		Precompile:          false,
+		Api:                 "json",
+		Favicon:             "favicon.ico",
+		Robots:              "robots.txt",
+		Log:                 true,
+		LogType:             "console",
+		LogPath:             "",
+		LogAsync:            false,
+		LayoutConfigPath:    "",
+		TemplateExt:         "html",
+		TemplateName:        "Content",
+		MaxRequestMemory:    32 << 20,
+		TemplateConfig:      template.NewTemplateConfig(),
 	}
 }
 
@@ -151,6 +155,11 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 	if err == nil {
 		httpCfg.SessionExpire = intValue
 	}
+	intValue, err = global.Int("SessionCookieExpire")
+	if err == nil {
+		httpCfg.SessionCookieExpire = intValue
+	}
+
 	boolValue, err = global.Bool("CSRF")
 	if err == nil {
 		httpCfg.CSRF = boolValue
@@ -166,6 +175,10 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 	intValue, err = global.Int("CSRFExpire")
 	if err == nil {
 		httpCfg.CSRFExpire = intValue
+	}
+	intValue, err = global.Int("CSRFCookieExpire")
+	if err == nil {
+		httpCfg.CSRFCookieExpire = intValue
 	}
 	strValue, err = global.String("Static")
 	if err == nil {

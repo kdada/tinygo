@@ -100,15 +100,17 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	return processor, nil
 }
 
-// createCookie 创建cookie(有效期为1天)
-func (this *HttpProcessor) createCookie(name string, id string) *http.Cookie {
+// createCookie 创建cookie
+func (this *HttpProcessor) createCookie(name string, id string, expire int) *http.Cookie {
 	var cookieValue = new(http.Cookie)
 	cookieValue.Name = name
 	cookieValue.Value = id
 	cookieValue.Path = "/"
-	cookieValue.MaxAge = 24 * 3600
-	cookieValue.Expires = time.Now().Add(time.Hour * 24)
 	cookieValue.HttpOnly = true
+	if expire > 0 {
+		cookieValue.MaxAge = expire
+		cookieValue.Expires = time.Now().Add(time.Second * time.Duration(expire))
+	}
 	return cookieValue
 }
 
@@ -131,15 +133,15 @@ func (this *HttpProcessor) RegisterMutiTypeFinder(finder ContextValueFinder) {
 func (this *HttpProcessor) ResolveSession(context *Context) {
 	if this.SessionContainer != nil {
 		//添加Session信息
-		var cookieValue, err = context.HttpContext.Request.Cookie(this.Config.SessionCookieName)
+		var cookieValue, exist = context.Cookie(this.Config.SessionCookieName)
 		var ss session.Session
 		var ok bool = false
-		if err == nil {
+		if exist {
 			ss, ok = this.SessionContainer.Session(cookieValue.Value)
 		}
 		if !ok {
 			ss, ok = this.SessionContainer.CreateSession()
-			this.addCookie(context, this.createCookie(this.Config.SessionCookieName, ss.SessionId()))
+			context.AddCookie(this.createCookie(this.Config.SessionCookieName, ss.SessionId(), this.Config.SessionCookieExpire))
 		}
 		if ok {
 			context.Session = ss
@@ -147,15 +149,15 @@ func (this *HttpProcessor) ResolveSession(context *Context) {
 	}
 	if this.CSRFContainer != nil {
 		//添加CSRF Session信息,CSRF的过期时间和Session相同,使用SessionExpire设置Cookie过期时间
-		var cookieValue, err = context.HttpContext.Request.Cookie(this.Config.CSRFCookieName)
+		var cookieValue, exist = context.Cookie(this.Config.CSRFCookieName)
 		var ss session.Session
 		var ok bool = false
-		if err == nil {
+		if exist {
 			ss, ok = this.CSRFContainer.Session(cookieValue.Value)
 		}
 		if !ok {
 			ss, ok = this.CSRFContainer.CreateSession()
-			this.addCookie(context, this.createCookie(this.Config.CSRFCookieName, ss.SessionId()))
+			context.AddCookie(this.createCookie(this.Config.CSRFCookieName, ss.SessionId(), this.Config.CSRFCookieExpire))
 		}
 		if ok {
 			context.CSRF = ss
