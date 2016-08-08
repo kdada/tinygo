@@ -1,3 +1,4 @@
+// Package meta 包含元数据解析和验证工具
 package meta
 
 import "reflect"

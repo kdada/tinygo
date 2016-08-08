@@ -1,3 +1,4 @@
+// package template 实现了循环布局模板
 package template
 
 import (

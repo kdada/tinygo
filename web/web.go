@@ -1,3 +1,4 @@
+// package web 实现了处理http请求的基本工具
 package web
 
 import (
