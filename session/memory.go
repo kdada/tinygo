@@ -109,7 +109,7 @@ func (this *MemSession) SetDeadline(second int) {
 	this.deadline = int(time.Now().Unix()) + second
 }
 
-// Deadline 获取Session过期实时间
+// Deadline 获取Session过期时间
 func (this *MemSession) Deadline() int {
 	return this.deadline
 }
