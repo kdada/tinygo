@@ -31,6 +31,8 @@ type Session interface {
 	Delete(key string)
 	// SetDeadline 设置有效期限
 	SetDeadline(second int)
+	// Deadline 获取过期时间
+	Deadline() int
 	// Dead 让Session立即过期
 	Die()
 	// Dead 判断Session是否过期

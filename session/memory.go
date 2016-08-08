@@ -109,6 +109,11 @@ func (this *MemSession) SetDeadline(second int) {
 	this.deadline = int(time.Now().Unix()) + second
 }
 
+// Deadline 获取Session过期实时间
+func (this *MemSession) Deadline() int {
+	return this.deadline
+}
+
 // Die 让Session立即过期
 func (this *MemSession) Die() {
 	this.deadline = 0
