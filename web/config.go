@@ -12,6 +12,7 @@ import (
 
 // Http配置
 type HttpConfig struct {
+	Config            config.Config            //配置信息
 	Root              string                   //应用根目录
 	App               string                   //应用名称
 	Https             bool                     //是否启用https,可选,默认为false
@@ -77,7 +78,7 @@ func NewHttpConfig() *HttpConfig {
 		LogType:           "console",
 		LogPath:           "",
 		LogAsync:          false,
-		LayoutConfigPath:  "", //views/layout.json
+		LayoutConfigPath:  "",
 		TemplateExt:       "html",
 		TemplateName:      "Content",
 		SessionCookieName: "ssid",
@@ -96,7 +97,10 @@ func ReadHttpConfig(appDir string, configPath string) (*HttpConfig, error) {
 		//配置文件加载出错
 		return nil, err
 	}
+	//设置根目录
 	httpCfg.Root = appDir
+	//保存配置信息
+	httpCfg.Config = cfg
 	//读取配置文件
 	var global = cfg.GlobalSection()
 	var strValue string
