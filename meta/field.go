@@ -25,16 +25,19 @@ type FieldMetadata struct {
 	Validator validator.Validator  //验证器
 }
 
-// Set 使用vp设置object的值
+// Set 使用vc设置object的值
 //  instance:拥有当前字段的对象的指针的反射值
-func (this *FieldMetadata) Set(instance reflect.Value, vp ValueProvider) error {
+func (this *FieldMetadata) Set(instance reflect.Value, vc ValueContainer) error {
 	if this.Kind != FieldKindIgnore {
-		var exist = vp.Contains(this.Name, this.Field.Type)
+		var vp, exist = vc.Contains(this.Name, this.Field.Type)
 		if exist {
 			var valid = true
 			if this.Validator != nil {
 				//验证器校验
-				var strs = vp.String(this.Name, this.Field.Type)
+				var strs = vp.String()
+				if len(strs) <= 0 && this.Kind == FieldKindRequired {
+					return ErrorRequiredField.Format(this.Name).Error()
+				}
 				for i, v := range strs {
 					valid = this.Validator.Validate(v)
 					if !valid {
@@ -50,9 +53,13 @@ func (this *FieldMetadata) Set(instance reflect.Value, vp ValueProvider) error {
 			}
 			if valid {
 				//验证通过则注入值
-				var value = vp.Value(this.Name, this.Field.Type)
-				var fValue = reflect.ValueOf(value)
-				instance.Elem().FieldByIndex(this.Field.Index).Set(fValue)
+				var value = vp.Value()
+				if value != nil {
+					var fValue = reflect.ValueOf(value)
+					instance.Elem().FieldByIndex(this.Field.Index).Set(fValue)
+				} else if this.Kind == FieldKindRequired {
+					return ErrorRequiredField.Format(this.Name).Error()
+				}
 			}
 		} else if this.Kind == FieldKindRequired {
 			return ErrorRequiredField.Format(this.Name).Error()

@@ -10,11 +10,11 @@ type MethodMetadata struct {
 	Return []reflect.Type
 }
 
-// Generate 根据vp提供的值生成相应值
-func (this *MethodMetadata) Generate(vp ValueProvider) (interface{}, error) {
+// Generate 根据vc提供的值生成相应值
+func (this *MethodMetadata) Generate(vc ValueContainer) (interface{}, error) {
 	var params = make([]reflect.Value, 0, len(this.Params))
 	for _, sMd := range this.Params {
-		var p, err = sMd.Generate(vp)
+		var p, err = sMd.Generate(vc)
 		if err != nil {
 			return nil, err
 		}

@@ -10,13 +10,14 @@ type StructMetadata struct {
 }
 
 // generate 根据vp提供的值生成相应结构体值的指针
-func (this *StructMetadata) generate(vp ValueProvider) (interface{}, error) {
-	if vp.Contains(this.Name, this.Struct) {
-		return vp.Value(this.Name, this.Struct), nil
+func (this *StructMetadata) generate(vc ValueContainer) (interface{}, error) {
+	var vp, ok = vc.Contains(this.Name, this.Struct)
+	if ok {
+		return vp.Value(), nil
 	}
 	var result = reflect.New(this.Struct)
 	for _, fMd := range this.Fields {
-		var err = fMd.Set(result, vp)
+		var err = fMd.Set(result, vc)
 		if err != nil {
 			return nil, err
 		}
@@ -25,11 +26,12 @@ func (this *StructMetadata) generate(vp ValueProvider) (interface{}, error) {
 }
 
 // Generate 根据vp提供的值生成相应值
-func (this *StructMetadata) Generate(vp ValueProvider) (interface{}, error) {
-	if vp.Contains(this.Name, this.Struct) {
-		return vp.Value(this.Name, this.Struct), nil
+func (this *StructMetadata) Generate(vc ValueContainer) (interface{}, error) {
+	var vp, ok = vc.Contains(this.Name, this.Struct)
+	if ok {
+		return vp.Value(), nil
 	}
-	var v, err = this.generate(vp)
+	var v, err = this.generate(vc)
 	if err != nil {
 		return nil, err
 	}
@@ -44,11 +46,12 @@ type StructPtrMetadata struct {
 }
 
 // Generate 根据vp提供的值生成相应值
-func (this *StructPtrMetadata) Generate(vp ValueProvider) (interface{}, error) {
-	if vp.Contains(this.Name, this.Type) {
-		return vp.Value(this.Name, this.Type), nil
+func (this *StructPtrMetadata) Generate(vc ValueContainer) (interface{}, error) {
+	var vp, ok = vc.Contains(this.Name, this.Type)
+	if ok {
+		return vp.Value(), nil
 	}
-	return this.Ptr.generate(vp)
+	return this.Ptr.generate(vc)
 }
 
 // 全局结构体元数据信息

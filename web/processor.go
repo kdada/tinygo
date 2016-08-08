@@ -18,15 +18,15 @@ type ParamTypeFunc func(context *Context, name string, t reflect.Type) interface
 
 // HttpProcessor 用于协调http连接器和路由,并管理Http应用的所有内容
 type HttpProcessor struct {
-	Root             router.Router            //根路由
-	Config           *HttpConfig              //http配置
-	Logger           log.Logger               //日志记录
-	SessionContainer session.SessionContainer //Session容器
-	CSRFContainer    session.SessionContainer //Csrf容器
-	Funcs            map[string]ParamTypeFunc //参数生成方法
-	DefaultFunc      ParamTypeFunc            //当Funcs中不存在指定类型的方法时,使用该方法处理
-	Templates        *template.ViewTemplates  //视图模板信息
-	Event            HttpProcessorEvent       //处理器事件
+	Root             router.Router                 //根路由
+	Config           *HttpConfig                   //http配置
+	Logger           log.Logger                    //日志记录
+	SessionContainer session.SessionContainer      //Session容器
+	CSRFContainer    session.SessionContainer      //Csrf容器
+	Finders          map[string]ContextValueFinder //Context单类型值查找器
+	MutiTypeFinders  []ContextValueFinder          //Context多类型值查找器
+	Templates        *template.ViewTemplates       //视图模板信息
+	Event            HttpProcessorEvent            //处理器事件
 }
 
 // NewHttpProcessor 创建Http处理器
@@ -61,9 +61,8 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	}
 
 	//注册参数类型方法
-	processor.Funcs = make(map[string]ParamTypeFunc)
-	register(processor.Funcs)
-	processor.DefaultFunc = DefaultFunc
+	processor.Finders = make(map[string]ContextValueFinder)
+	register(processor)
 	//创建视图模板信息
 	processor.Templates = template.NewViewTemplates(config.TemplateConfig)
 	if config.Precompile {
@@ -101,15 +100,6 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 	return processor, nil
 }
 
-// ParamFunc 根据类型全名获取指定的生成方法
-func (this *HttpProcessor) ParamFunc(t string) ParamTypeFunc {
-	var f, ok = this.Funcs[t]
-	if !ok {
-		f = this.DefaultFunc
-	}
-	return f
-}
-
 // createCookie 创建cookie(有效期为1天)
 func (this *HttpProcessor) createCookie(name string, id string) *http.Cookie {
 	var cookieValue = new(http.Cookie)
@@ -125,6 +115,16 @@ func (this *HttpProcessor) createCookie(name string, id string) *http.Cookie {
 // addCookie 添加cookie
 func (this *HttpProcessor) addCookie(context *Context, cookie *http.Cookie) {
 	context.HttpContext.ResponseWriter.Header().Add("Set-Cookie", cookie.String())
+}
+
+// RegisterFinder 注册单一类型的值查找器
+func (this *HttpProcessor) RegisterFinder(t reflect.Type, finder ContextValueFinder) {
+	this.Finders[t.String()] = finder
+}
+
+// RegisterMutiTypeFinder 注册多类型的值查找器
+func (this *HttpProcessor) RegisterMutiTypeFinder(finder ContextValueFinder) {
+	this.MutiTypeFinders = append(this.MutiTypeFinders, finder)
 }
 
 // ResolveSession 处理会话相关内容

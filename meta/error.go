@@ -31,4 +31,7 @@ const (
 	ErrorRequiredField  Error = "ErrorRequiredField(M10040):字段(%s)的值不存在"
 	ErrorFieldNotValid  Error = "ErrorFieldNotValid(M10041):字段(%s)无法通过校验"
 	ErrorFieldsNotValid Error = "ErrorFieldsNotValid(M10042):字段(%s)的第(%d)个值无法通过校验"
+
+	ErrorMustNotBeInterface Error = "ErrorMustNotBeInterface(M10050):指定参数不能是接口类型"
+	ErrorNotAssignable      Error = "ErrorNotAssignable(M10051):指定类型(%s)不能赋值给类型(%s)"
 )

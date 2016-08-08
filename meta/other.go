@@ -8,10 +8,11 @@ type OtherMetadata struct {
 	Type reflect.Type //类型
 }
 
-// Generate 根据vp提供的值生成相应值
-func (this *OtherMetadata) Generate(vp ValueProvider) (interface{}, error) {
-	if vp.Contains(this.Name, this.Type) {
-		return vp.Value(this.Name, this.Type), nil
+// Generate 根据vc提供的值生成相应值
+func (this *OtherMetadata) Generate(vc ValueContainer) (interface{}, error) {
+	var vp, ok = vc.Contains(this.Name, this.Type)
+	if ok {
+		return vp.Value(), nil
 	}
 	return reflect.New(this.Type).Elem().Interface(), nil
 }
@@ -19,7 +20,7 @@ func (this *OtherMetadata) Generate(vp ValueProvider) (interface{}, error) {
 // AnalyzeOther 分析其他类型并生成OtherMetadata
 func AnalyzeOther(t reflect.Type) (Generator, error) {
 	return &OtherMetadata{
-		t.Name(),
+		t.String(),
 		t,
 	}, nil
 }
