@@ -78,15 +78,22 @@ func (this *Rows) parse(value reflect.Value, index int, fields []interface{}) er
 		{
 			if value.Type().String() == "time.Time" {
 				//时间结构体解析
-				var s = sql.NullString{}
-				var err = s.Scan(*(fields[index].(*interface{})))
-				if err != nil {
-					return err
-				}
-				if s.Valid {
-					result, err := time.ParseInLocation("2006-01-02 15:04:05", s.String, time.Local)
-					if err == nil {
-						value.Set(reflect.ValueOf(result))
+				var v = *(fields[index].(*interface{}))
+				if reflect.TypeOf(v).String() == "time.Time" {
+					value.Set(reflect.ValueOf(v))
+				} else {
+					var s = sql.NullString{}
+					var err = s.Scan(v)
+					if err != nil {
+						return err
+					}
+					if s.Valid {
+						result, err := time.ParseInLocation("2006-01-02 15:04:05", s.String, time.Local)
+						if err == nil {
+							value.Set(reflect.ValueOf(result))
+						} else {
+							return err
+						}
 					}
 				}
 			} else {
