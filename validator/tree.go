@@ -201,7 +201,7 @@ func NewExecutableFuncNode(v ValidatorFunc, params []interface{}) SyntaxNode {
 	}
 }
 
-// 执行
+// Execute 执行
 func (this *ExecutableFuncNode) Execute(str string) bool {
 	return this.validator.Validate(str, this.params...)
 }

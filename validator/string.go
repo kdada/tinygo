@@ -13,7 +13,7 @@ type StringValidator struct {
 	Tree SyntaxNode
 }
 
-// 创建字符串验证器
+// NewStringValidator 创建字符串验证器
 func NewStringValidator(source string) (Validator, error) {
 	var p = NewParser(NewLexer(source))
 	var err = p.Parse()
@@ -92,12 +92,12 @@ func translate(node SyntaxNode) error {
 	return ErrorIllegalNode.Format(node.Kind()).Error()
 }
 
-// 验证
+// Validate 验证
 func (this *StringValidator) Validate(str string) bool {
 	return this.validate(this.Tree, str)
 }
 
-// 递归验证
+// validate 递归验证
 func (this *StringValidator) validate(node SyntaxNode, str string) bool {
 	if node.Kind() == NodeKindExecutor {
 

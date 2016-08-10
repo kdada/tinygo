@@ -8,7 +8,7 @@ import (
 	"github.com/kdada/tinygo/router"
 )
 
-// 创建空间路由
+// NewSpaceRouter 创建空间路由
 //  name:路由名称
 //  return:执行成功则返回router.Router
 func NewSpaceRouter(name string) router.Router {
@@ -19,12 +19,12 @@ func NewSpaceRouter(name string) router.Router {
 	return r
 }
 
-// 创建适用于Web App的根路由
+// NewRootRouter 创建适用于Web App的根路由
 func NewRootRouter() router.Router {
 	return NewSpaceRouter("")
 }
 
-// 创建控制器路由,根据方法返回值确定该方法处理哪种形式的http请求
+// NewControllerRouter 创建控制器路由,根据方法返回值确定该方法处理哪种形式的http请求
 //  instance:控制器对象
 //  控制器方法必须满足如下格式:
 //   func (this *SomeController) Method(param *ParamStruct) web.Result
@@ -69,7 +69,7 @@ func NewControllerRouter(instance interface{}) router.Router {
 	return controllerRouter
 }
 
-// 创建函数路由,根据方法返回值确定该方法处理哪种形式的http请求
+// NewFuncRouter 创建函数路由,根据方法返回值确定该方法处理哪种形式的http请求
 //  name:路由名称
 //  function:函数
 //  函数必须满足如下格式:
@@ -95,7 +95,7 @@ func NewFuncRouter(name string, function interface{}) router.Router {
 	return mr
 }
 
-// 创建函数路由,可匹配无限层级和任意http方法的请求
+// NewMutableFuncRouter 创建函数路由,可匹配无限层级和任意http方法的请求
 //  name:路由名称
 //  function:函数
 //  函数必须满足如下格式:
@@ -120,7 +120,7 @@ func NewMutableFuncRouter(name string, function interface{}) router.Router {
 	return mr
 }
 
-// 创建文件路由,只能匹配Get类型的文件请求,返回指定的文件
+// NewFileRouter 创建文件路由,只能匹配Get类型的文件请求,返回指定的文件
 //  name:路由名称
 //  path:文件路径
 //  return:执行成功则返回router.Router
@@ -133,7 +133,7 @@ func NewFileRouter(name string, path string) router.Router {
 	return mr
 }
 
-// 创建静态文件路由,只能匹配Get类型的文件请求,返回指定的文件
+// NewStaticRouter 创建静态文件路由,只能匹配Get类型的文件请求,返回指定的文件
 //  name:路由名称
 //  path:文件目录路径
 //  return:执行成功则返回router.Router
@@ -151,7 +151,7 @@ func NewStaticRouter(name string, path string) router.Router {
 	return pathRouter
 }
 
-// 检查元数据的第一个返回值是否符合web.Result接口
+// CheckResult 检查元数据的第一个返回值是否符合web.Result接口
 func CheckResult(m *meta.MethodMetadata) error {
 	if len(m.Return) <= 0 {
 		return ErrorNoReturn.Format(m.Name).Error()
@@ -163,7 +163,7 @@ func CheckResult(m *meta.MethodMetadata) error {
 	return nil
 }
 
-// 提取name中包含的Http方法名,如果不包含任何方法名,则返回Post
+// HttpMethod 提取name中包含的Http方法名,如果不包含任何方法名,则返回Post
 func HttpMethod(name string) []string {
 	var dotPos = strings.LastIndex(name, ".")
 	if dotPos > 0 {
@@ -198,7 +198,7 @@ func HttpMethod(name string) []string {
 	return result
 }
 
-// 生成Http方法名路由
+// HttpResultRouter 生成Http方法名路由
 func HttpResultRouter(resultName string, gen router.RouterExcutorGenerator) []router.Router {
 	var rs = make([]router.Router, 0, 1)
 	for _, httpMethod := range HttpMethod(resultName) {

@@ -210,7 +210,7 @@ func (this *Context) WriteResult(result Result) error {
 	return result.WriteTo(this.HttpContext.ResponseWriter)
 }
 
-// 返回文件类型结果
+// File 返回文件类型结果
 func (this *Context) File(path string) *FileResult {
 	var result = new(FileResult)
 	result.Status = 200
@@ -219,7 +219,7 @@ func (this *Context) File(path string) *FileResult {
 	return result
 }
 
-// 返回Json类型结果
+// Json 返回Json类型结果
 func (this *Context) Json(data interface{}) *JsonResult {
 	var result = new(JsonResult)
 	result.Status = 200
@@ -227,7 +227,7 @@ func (this *Context) Json(data interface{}) *JsonResult {
 	return result
 }
 
-// 返回Xml类型结果
+// Xml 返回Xml类型结果
 func (this *Context) Xml(data interface{}) *XmlResult {
 	var result = new(XmlResult)
 	result.Status = 200
@@ -235,7 +235,7 @@ func (this *Context) Xml(data interface{}) *XmlResult {
 	return result
 }
 
-// 返回Api类型结果
+// Api 返回Api类型结果
 func (this *Context) Api(data interface{}) HttpResult {
 	switch this.Processor.Config.Api {
 	case "json":
@@ -262,7 +262,7 @@ func (this *Context) Api(data interface{}) HttpResult {
 	return this.Json(data)
 }
 
-// 返回NotFound类型结果
+// NotFound 返回NotFound类型结果
 func (this *Context) NotFound() *NotFoundResult {
 	var result = new(NotFoundResult)
 	result.Status = 404
@@ -270,7 +270,7 @@ func (this *Context) NotFound() *NotFoundResult {
 	return result
 }
 
-// 返回临时重定向类型结果
+// Redirect 返回临时重定向类型结果
 func (this *Context) Redirect(url string) *RedirectResult {
 	var result = new(RedirectResult)
 	result.Status = 302
@@ -279,7 +279,7 @@ func (this *Context) Redirect(url string) *RedirectResult {
 	return result
 }
 
-// 返回永久重定向类型结果
+// RedirectPermanently 返回永久重定向类型结果
 func (this *Context) RedirectPermanently(url string) *RedirectResult {
 	var result = new(RedirectResult)
 	result.Status = 301
@@ -288,7 +288,7 @@ func (this *Context) RedirectPermanently(url string) *RedirectResult {
 	return result
 }
 
-// 返回数据类型结果
+// Data 返回数据类型结果
 func (this *Context) Data(data []byte) *DataResult {
 	var result = new(DataResult)
 	result.Status = 200
@@ -296,7 +296,7 @@ func (this *Context) Data(data []byte) *DataResult {
 	return result
 }
 
-// 返回视图类型结果
+// View 返回视图类型结果
 func (this *Context) View(path string, data ...interface{}) *ViewResult {
 	var result = new(ViewResult)
 	result.Status = 200
@@ -307,7 +307,7 @@ func (this *Context) View(path string, data ...interface{}) *ViewResult {
 	return result
 }
 
-// 返回部分视图类型结果
+// PartialView 返回部分视图类型结果
 func (this *Context) PartialView(path string, data ...interface{}) *PartialViewResult {
 	var result = new(PartialViewResult)
 	result.Status = 200
@@ -369,7 +369,7 @@ func (this *Context) mapTo(value reflect.Value, data ViewData) {
 	}
 }
 
-// 重新分发,将当前请求交给另一个path处理
+// Redispatch 重新分发,将当前请求交给另一个path处理
 func (this *Context) Redispatch(path string) *UserDefinedResult {
 	var result = new(UserDefinedResult)
 	result.Status = StatusCodeRedispatch
