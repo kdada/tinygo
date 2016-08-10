@@ -26,4 +26,5 @@ func (this Error) String() string {
 // 错误码
 const (
 	ErrorInvalidParamType Error = "Q10000:ErrorInvalidParamType,无效的输入类型(%s)"
+	ErrorBeginFailed      Error = "Q10010:ErrorBeginFailed,当前DB已经打开了一个事务"
 )

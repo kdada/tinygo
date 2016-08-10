@@ -36,6 +36,9 @@ func (this *DB) IsTransaction() bool {
 
 // Begin 开始事务
 func (this *DB) Begin() error {
+	if this.IsTransaction() {
+		return ErrorBeginFailed.Error()
+	}
 	var err error
 	this.transaction, err = this.db.Begin()
 	if err != nil {
