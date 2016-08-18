@@ -2,8 +2,10 @@ package validator
 
 import (
 	"strconv"
+	"unicode/utf8"
 )
 
+// 整数比较方法
 // ltI < int64
 func ltI(str string, l int64) bool {
 	var i, err = strconv.ParseInt(str, 10, 64)
@@ -40,6 +42,7 @@ func neI(str string, l int64) bool {
 	return err == nil && i != l
 }
 
+// 浮点数比较方法
 // ltF < float64
 func ltF(str string, l float64) bool {
 	var i, err = strconv.ParseFloat(str, 64)
@@ -76,6 +79,7 @@ func neF(str string, l float64) bool {
 	return err == nil && i != l
 }
 
+//字符串比较方法
 // eqS == string
 func eqS(str string, l string) bool {
 	return str == l
@@ -86,6 +90,7 @@ func neS(str string, l string) bool {
 	return str == l
 }
 
+// 字节数比较方法
 // lenLtI < int64
 func lenLtI(str string, l int64) bool {
 	return len(str) < int(l)
@@ -114,4 +119,35 @@ func lenEqI(str string, l int64) bool {
 // lenNeI != int64
 func lenNeI(str string, l int64) bool {
 	return len(str) != int(l)
+}
+
+// 字符数比较方法
+// clenLtI < int64
+func clenLtI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) < int(l)
+}
+
+// clenLeI <= int64
+func clenLeI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) <= int(l)
+}
+
+// clenGtI > int64
+func clenGtI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) > int(l)
+}
+
+// clenGeI >= int64
+func clenGeI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) >= int(l)
+}
+
+// clenEqI == int64
+func clenEqI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) == int(l)
+}
+
+// clenNeI != int64
+func clenNeI(str string, l int64) bool {
+	return utf8.RuneCountInString(str) != int(l)
 }
