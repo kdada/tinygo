@@ -7,7 +7,7 @@ import (
 
 func init() {
 	//初始化基本模板函数
-	//until(num int) []int:生成一个从0到num的数组
+	//until(start, end int) []int:生成一个从start到end的数组
 	//time(t time.Time) string:返回时间字符串2006-01-02 15:04:05
 	//date(t time.Time) string:返回日期字符串2006-01-02
 	//tocss(s string) template.CSS:转换字符串为CSS
@@ -17,12 +17,16 @@ func init() {
 	//tojsstr(s string) template.JSStr:转换字符串为JSStr
 	//tourl(s string) template.URL:转换字符串为URL
 	commonFuncMap = template.FuncMap{
-		"until": func(num int) []int {
-			var result = make([]int, num)
-			for i := 0; i < num; i++ {
-				result[i] = i
+		"until": func(start, end int) []int {
+			if end >= start {
+				var length = end - start + 1
+				var result = make([]int, length)
+				for i := 0; i < length; i++ {
+					result[i] = start + i
+				}
+				return result
 			}
-			return result
+			return []int{}
 		},
 		"time": func(t time.Time) string {
 			return t.Format("2006-01-02 15:04:05")
