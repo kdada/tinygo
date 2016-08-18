@@ -24,14 +24,6 @@ func (this *TemplateSession) Contains(key string) bool {
 	return ok
 }
 
-// SetDefault 设置默认值,当且仅当key不存在时设置成功
-func (this *TemplateSession) SetDefault(key string, value interface{}) string {
-	if !this.Contains(key) {
-		this.sess.SetValue(key, value)
-	}
-	return ""
-}
-
 // Value 获取值
 func (this *TemplateSession) Value(key string) interface{} {
 	var v, ok = this.sess.Value(key)
