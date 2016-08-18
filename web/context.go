@@ -318,7 +318,7 @@ func (this *Context) PartialView(path string, data ...interface{}) *PartialViewR
 	return result
 }
 
-// commonViewData 生成公共视图数据
+// commonViewData 生成公共视图数据,包括SESSION,CSRF对象,CONTAINS和SET方法
 func (this *Context) commonViewData() ViewData {
 	var vd = ViewData{}
 	if this.Session != nil {
@@ -326,6 +326,15 @@ func (this *Context) commonViewData() ViewData {
 	}
 	if this.CSRF != nil {
 		vd["CSRF"] = NewTemplateCSRF(this.CSRF, this.Processor.Config.CSRFTokenName)
+	}
+	vd["CONTAINS"] = func(name string) bool {
+		var _, ok = vd[name]
+		return ok
+	}
+	vd["SET"] = func(name string, value interface{}) {
+		if value != nil {
+			vd[name] = value
+		}
 	}
 	return vd
 }
