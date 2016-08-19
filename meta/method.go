@@ -11,6 +11,7 @@ type MethodMetadata struct {
 }
 
 // Generate 根据vc提供的值生成相应值
+//  return:函数的返回值数组([]interface{})
 func (this *MethodMetadata) Generate(vc ValueContainer) (interface{}, error) {
 	var params = make([]reflect.Value, 0, len(this.Params))
 	for _, sMd := range this.Params {

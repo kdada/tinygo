@@ -9,8 +9,8 @@ type StructMetadata struct {
 	Fields []*FieldMetadata //结构体字段元数据
 }
 
-// generate 根据vp提供的值生成相应结构体值的指针
-func (this *StructMetadata) generate(vc ValueContainer) (interface{}, error) {
+// New 根据vp提供的值生成相应结构体值的指针
+func (this *StructMetadata) New(vc ValueContainer) (interface{}, error) {
 	var vp, ok = vc.Contains(this.Name, this.Struct)
 	if ok {
 		return vp.Value(), nil
@@ -31,7 +31,7 @@ func (this *StructMetadata) Generate(vc ValueContainer) (interface{}, error) {
 	if ok {
 		return vp.Value(), nil
 	}
-	var v, err = this.generate(vc)
+	var v, err = this.New(vc)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (this *StructPtrMetadata) Generate(vc ValueContainer) (interface{}, error) 
 	if ok {
 		return vp.Value(), nil
 	}
-	return this.Ptr.generate(vc)
+	return this.Ptr.New(vc)
 }
 
 // 全局结构体元数据信息

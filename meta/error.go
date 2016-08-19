@@ -34,4 +34,8 @@ const (
 
 	ErrorMustNotBeInterface Error = "ErrorMustNotBeInterface(M10050):指定参数不能是接口类型"
 	ErrorNotAssignable      Error = "ErrorNotAssignable(M10051):指定类型(%s)不能赋值给类型(%s)"
+
+	ErrorInvalidFunction     Error = "ErrorInvalidNilParams(M10060):函数只能有一个返回值"
+	ErrorInvalidGenerator    Error = "ErrorInvalidGenerator(M10061):生成器不能为接口类型(%s)"
+	ErrorMustBeStructPointer Error = "ErrorInvalidGenerator(M10062):生成器为nil时必须是结构体指针,不能是(%s)"
 )
