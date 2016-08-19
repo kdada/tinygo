@@ -8,6 +8,27 @@ import (
 	"github.com/kdada/tinygo/router"
 )
 
+// Http方法
+type HttpMethod string
+
+const (
+	HttpMethodGet     HttpMethod = "Get"     // Get方法
+	HttpMethodPost    HttpMethod = "Post"    // Post方法
+	HttpMethodPut     HttpMethod = "Put"     // Put方法
+	HttpMethodDelete  HttpMethod = "Delete"  // Delete方法
+	HttpMethodOptions HttpMethod = "Options" // Options方法
+	HttpMethodHead    HttpMethod = "Head"    // Head方法
+	HttpMethodTrace   HttpMethod = "Trace"   // Trace方法
+	HttpMethodConnect HttpMethod = "Connect" // Connect方法
+)
+
+// 路由方法信息
+type RouterMethod struct {
+	MethodName string     //控制器方法名称
+	RouterName string     //路由名称
+	HttpMethod HttpMethod //Http方法名称
+}
+
 // NewSpaceRouter 创建空间路由
 //  name:路由名称
 //  return:执行成功则返回router.Router
@@ -17,6 +38,30 @@ func NewSpaceRouter(name string) router.Router {
 		panic(err)
 	}
 	return r
+}
+
+// NewSpaceRouters 创建多级空间路由
+//  url:路由,使用/分割
+//  return:执行成功则返回(根路由,叶路由)
+func NewSpaceRouters(url string) (router.Router, router.Router) {
+	var names = strings.Split(url, "/")
+	var root router.Router
+	var leaf router.Router
+	for _, v := range names {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+		var r = NewSpaceRouter(v)
+		if root == nil {
+			root = r
+			leaf = r
+			continue
+		}
+		leaf.AddChild(r)
+		leaf = r
+	}
+	return root, leaf
 }
 
 // NewRootRouter 创建适用于Web App的根路由
@@ -31,7 +76,7 @@ func NewRootRouter() router.Router {
 //   this:必须是控制器指针
 //   param:可以没有或者有多个,如果有则类型必须为结构体指针类型
 //   第一个返回结果最好是能够赋值给web.Result接口,也可以是其他类型
-//  return:执行成功则返回router.Router
+//  return:执行成功则返回控制器的router.Router
 func NewControllerRouter(instance interface{}) router.Router {
 	var instanceType = reflect.TypeOf(instance)
 	if !meta.IsStructPtrType(instanceType) {
@@ -62,6 +107,50 @@ func NewControllerRouter(instance interface{}) router.Router {
 		var mr = NewSpaceRouter(m.Name)
 		var excutor = NewAdvancedExecutor(m)
 		mr.AddChildren(HttpResultRouter(m.Return[0].Name(), func() router.RouterExcutor {
+			return excutor
+		}))
+		controllerRouter.AddChild(mr)
+	}
+	return controllerRouter
+}
+
+// NewCustomControllerRouter 创建定制化控制器路由
+//  instance:控制器对象
+//  name:控制器路由名称,为空时使用instance类名(不含Controller)
+//  methodsInfo:路由方法信息数组,RouterName为空时使用方法名
+//  return:执行成功则返回控制器的router.Router
+func NewCustomControllerRouter(instance interface{}, name string, methodsInfo []RouterMethod) router.Router {
+	var instanceType = reflect.TypeOf(instance)
+	if !meta.IsStructPtrType(instanceType) {
+		panic(ErrorNotStructPtr.Format(instanceType.String()).Error())
+	}
+	var methods = make([]*meta.MethodMetadata, len(methodsInfo))
+	//遍历方法
+	for k, v := range methodsInfo {
+		var method, ok = instanceType.MethodByName(v.MethodName)
+		if !ok {
+			panic(ErrorNoSpecificMethod.Format(instanceType.String(), v.MethodName).Error())
+		}
+		var mMd, err = meta.AnalyzeStructMethod(&method)
+		if err != nil {
+			panic(err)
+		}
+		methods[k] = mMd
+	}
+	// 生成路由
+	if name == "" {
+		name = strings.TrimSuffix(instanceType.Elem().Name(), "Controller")
+	}
+	var controllerRouter = NewSpaceRouter(name)
+	for i, m := range methods {
+		var info = methodsInfo[i]
+		var rname = info.RouterName
+		if rname == "" {
+			rname = m.Name
+		}
+		var mr = NewSpaceRouter(info.RouterName)
+		var excutor = NewAdvancedExecutor(m)
+		mr.AddChildren(HttpResultRouter(string(info.HttpMethod), func() router.RouterExcutor {
 			return excutor
 		}))
 		controllerRouter.AddChild(mr)
@@ -164,7 +253,7 @@ func CheckResult(m *meta.MethodMetadata) error {
 }
 
 // HttpMethod 提取name中包含的Http方法名,如果不包含任何方法名,则返回Post
-func HttpMethod(name string) []string {
+func HttpMethodName(name string) []string {
 	var dotPos = strings.LastIndex(name, ".")
 	if dotPos > 0 {
 		name = name[dotPos+1:]
@@ -201,7 +290,7 @@ func HttpMethod(name string) []string {
 // HttpResultRouter 生成Http方法名路由
 func HttpResultRouter(resultName string, gen router.RouterExcutorGenerator) []router.Router {
 	var rs = make([]router.Router, 0, 1)
-	for _, httpMethod := range HttpMethod(resultName) {
+	for _, httpMethod := range HttpMethodName(resultName) {
 		var hr, err3 = router.NewRouter("base", httpMethod, nil)
 		if err3 != nil {
 			panic(err3)
