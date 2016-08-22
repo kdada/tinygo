@@ -13,9 +13,9 @@ type TestBaseExcutor struct {
 	result int
 }
 
-func (this *TestBaseExcutor) Execute() error {
+func (this *TestBaseExcutor) Execute() (interface{}, error) {
 	this.result = 124
-	return nil
+	return this.result, nil
 }
 
 type TestFileExcutor struct {
@@ -23,9 +23,9 @@ type TestFileExcutor struct {
 	result int
 }
 
-func (this *TestFileExcutor) Execute() error {
+func (this *TestFileExcutor) Execute() (interface{}, error) {
 	this.result = 34454
-	return nil
+	return this.result, nil
 }
 
 type TestContext struct {
@@ -34,8 +34,9 @@ type TestContext struct {
 }
 
 // Value 返回路由值
-func (this *TestContext) Value(name string) string {
-	return this.values[name]
+func (this *TestContext) Value(name string) (string, bool) {
+	var v, ok = this.values[name]
+	return v, ok
 }
 
 // SetValue 设置路由值
@@ -74,21 +75,47 @@ func TestRouter(t *testing.T) {
 	var context = new(TestContext)
 	context.Segs = []string{"", "hOme", "indEx.html"}
 	var e, ok = root.Match(context)
+	if context.Level != 3 {
+		t.Fatal("匹配的路由数量错误")
+	}
 	if !ok {
 		t.Fatal("基础路由查询失败")
 	}
-	var err = e.Execute()
-	if err != nil || e.(*TestBaseExcutor).result != 124 {
+	var r, err = e.Execute()
+	if err != nil || e.(*TestBaseExcutor).result != 124 || r.(int) != 124 {
 		t.Fatal("基础路由执行错误")
 	}
 	context = new(TestContext)
 	context.Segs = []string{"", "upload", "some.file"}
 	e, ok = root.Match(context)
+	if context.Level != 2 {
+		t.Fatal("匹配的路由数量错误")
+	}
 	if !ok {
 		t.Fatal("无限路由查询失败")
 	}
-	err = e.Execute()
-	if err != nil || e.(*TestFileExcutor).result != 34454 {
+	r, err = e.Execute()
+	if err != nil || e.(*TestFileExcutor).result != 34454 || r.(int) != 34454 {
 		t.Fatal("无限路由执行错误")
+	}
+}
+
+func TestFind(t *testing.T) {
+	// 测试查找方法
+	var c = NewBaseContext("/home/")
+	var r, ok = root.Find(c)
+	if c.Level != 2 {
+		t.Fatal("匹配的路由数量错误")
+	}
+	if !ok || r.Name() != "Home" {
+		t.Fatal("路由查找错误")
+	}
+	c = NewBaseContext("/ss/dddd")
+	r, ok = root.Find(c)
+	if c.Level != 2 {
+		t.Fatal("匹配的路由数量错误")
+	}
+	if !ok || r.Name() != "file" {
+		t.Fatal("路由查找错误")
 	}
 }

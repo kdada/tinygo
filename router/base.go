@@ -9,7 +9,7 @@ import (
 // 基础路由
 type BaseRouter struct {
 	UnlimitedRouter
-	children         map[string]Router
+	children         map[string]Router //所有子路由
 	normalChildren   map[string]Router //通常子路由
 	abnormalChildren map[string]Router //非通常子路由
 	match            string            //用于匹配的字符串,可能包含正则信息
@@ -120,55 +120,58 @@ func (this *BaseRouter) RemoveChild(name string) (Router, bool) {
 	return nil, false
 }
 
-// Match 匹配指定路由上下文,匹配成功则返回RouterExcutor
-func (this *BaseRouter) Match(context RouterContext) (RouterExcutor, bool) {
+// Find 查找路由,该路由不一定能够生成RouterExcutor
+func (this *BaseRouter) Find(context RouterContext) (Router, bool) {
+	//获取当前路由段
 	var segs = context.Segments()
 	var data [][]string
 	if !this.Normal() {
+		//正则路由检查
 		data = this.regexp.FindAllStringSubmatch(segs[0], 1)
 		if len(data) <= 0 {
+			//无法匹配当前正则路由,直接返回
+			return nil, false
+		}
+	} else if context.Pure() {
+		//当前是常规根路由,则进行路由名称匹配
+		if this.unify(segs[0]) != this.unify(this.MatchString()) {
 			return nil, false
 		}
 	}
+	//增加1个匹配级别
 	context.Match(1)
-	defer context.Unmatch(1)
-
+	//获取子级路由段
 	segs = context.Segments()
-	var executor RouterExcutor
-	if len(segs) <= 0 {
-		if this.executorGenerator == nil {
-			//匹配失败
-			return nil, false
-		}
-		//成功匹配
-		executor = this.executorGenerator()
-		executor.SetRouter(this)
-		executor.SetRouterContext(context)
-	} else {
-		//路由传递
+	var router Router = this
+	if len(segs) > 0 {
+		//路由段未匹配完成则传递给子路由
 		var match = this.unify(segs[0])
+		//检查常规子路由
 		var r, ok = this.normalChildren[match]
 		if ok {
-			executor, ok = r.Match(context)
+			router, ok = r.Find(context)
 		}
 		if !ok {
+			//检查非常规子路由
 			for _, v := range this.abnormalChildren {
-				executor, ok = v.Match(context)
+				router, ok = v.Find(context)
 				if ok {
 					break
 				}
 			}
 		}
 		if !ok {
+			//未能匹配成功,减少1个匹配级别
+			context.Unmatch(1)
 			return nil, false
 		}
 	}
-	//匹配成功设置路由值
+	//匹配成功,保持路由级别并设置路由值
 	if len(data) >= 1 {
 		var values = data[0][1:]
 		for i, v := range values {
 			context.SetValue(this.keys[i], v)
 		}
 	}
-	return executor, true
+	return router, true
 }

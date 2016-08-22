@@ -1,8 +1,24 @@
 package router
 
+import "regexp"
+
+// 基础路由上下文
 type BaseContext struct {
 	Segs  []string //路由段信息
 	Level int      //当前路由级别
+}
+
+// 分隔符正则表达式
+var spReg = regexp.MustCompile(`[\\/]+`)
+
+// NewBaseContext 使用path创建基础路由上下文,path可以用\或/分割
+func NewBaseContext(path string) *BaseContext {
+	var segs = spReg.Split(path+"/", -1)
+	segs = segs[:len(segs)-1]
+	return &BaseContext{
+		segs,
+		0,
+	}
 }
 
 // Segments 返回可匹配路由段
@@ -21,6 +37,11 @@ func (this *BaseContext) Match(count int) {
 // Unmatch 失配数量
 func (this *BaseContext) Unmatch(count int) {
 	this.Level -= count
+}
+
+// Pure 返回当前是否未匹配任何路由
+func (this *BaseContext) Pure() bool {
+	return this.Level == 0
 }
 
 // Value 返回路由值

@@ -146,14 +146,33 @@ func (this *UnlimitedRouter) SetRouterExcutorGenerator(reg RouterExcutorGenerato
 	this.executorGenerator = reg
 }
 
+// RouterExcutor 获得路由执行器
+func (this *UnlimitedRouter) RouterExcutor() (RouterExcutor, bool) {
+	if this.executorGenerator != nil {
+		return this.executorGenerator(), true
+	}
+	return nil, false
+}
+
+// Find 查找路由,该路由不一定能够生成RouterExcutor
+func (this *UnlimitedRouter) Find(context RouterContext) (Router, bool) {
+	context.Match(1)
+	return this, true
+}
+
 // Match 匹配指定路由上下文,匹配成功则返回RouterExcutor
 func (this *UnlimitedRouter) Match(context RouterContext) (RouterExcutor, bool) {
-	if this.executorGenerator != nil {
-		var executor = this.executorGenerator()
-		executor.SetRouter(this)
+	var router, ok = this.self.Find(context)
+	if !ok {
+		//匹配失败
+		return nil, false
+	}
+	//成功匹配
+	var executor, has = router.RouterExcutor()
+	if has {
+		executor.SetRouter(router)
 		executor.SetRouterContext(context)
 		return executor, true
 	}
-	//匹配失败
 	return nil, false
 }

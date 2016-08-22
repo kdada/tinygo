@@ -36,8 +36,12 @@ type Router interface {
 	RemovePostFilter(filter PostFilter) bool
 	// ExecPostFilter 执行后置过滤器
 	ExecPostFilter(context RouterContext, result interface{}) bool
-	// SetRouterExcutor 设置路由执行器生成方法
+	// SetRouterExcutorGenerator 设置路由执行器生成方法
 	SetRouterExcutorGenerator(RouterExcutorGenerator)
+	// RouterExcutor 获得路由执行器
+	RouterExcutor() (RouterExcutor, bool)
+	// Find 查找路由,该路由不一定能够生成RouterExcutor
+	Find(context RouterContext) (Router, bool)
 	// Match 匹配指定路由上下文,匹配成功则返回RouterExcutor
 	Match(context RouterContext) (RouterExcutor, bool)
 }
@@ -49,10 +53,12 @@ type RouterExcutorGenerator func() RouterExcutor
 type RouterContext interface {
 	// Segments 返回可匹配路由段
 	Segments() []string
-	// Match 匹配数量
+	// Match 匹配路由数量
 	Match(count int)
-	// Unmatch 失配数量
+	// Unmatch 失配路由数量
 	Unmatch(count int)
+	// Pure 返回当前是否未匹配任何路由
+	Pure() bool
 	// Value 返回路由值
 	Value(name string) (string, bool)
 	// SetValue 设置路由值
