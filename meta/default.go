@@ -1,39 +1,45 @@
 package meta
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 // 全局值容器
 var GlobalValueContainer = NewDefaultValueContainer()
 
-// 生成方法
-type GenerateFunc func() interface{}
+// 值提供器
+type ValueGenerator struct {
+	Strings []string           //用于验证的字符串信息
+	Func    func() interface{} //值生成方法
+}
 
 // 默认值提供器,仅根据类型提供对象,不提供字符串值,因此无法用于字段校验
 type DefaultValueProvider struct {
-	Func GenerateFunc
+	ValueGenerator *ValueGenerator
 }
 
 // String 根据名称和类型返回相应的字符串值
 func (this *DefaultValueProvider) String() []string {
-	return []string{}
+	return this.ValueGenerator.Strings
 }
 
 // Value 根据名称和类型返回相应的解析后的对象
 func (this *DefaultValueProvider) Value() interface{} {
-	return this.Func()
+	return this.ValueGenerator.Func()
 }
 
 // 默认值容器
 type DefaultValueContainer struct {
-	NameContainer map[string]GenerateFunc //名称容器
-	TypeContainer map[string]GenerateFunc //类型容器
+	NameContainer map[string]*ValueGenerator //名称容器
+	TypeContainer map[string]*ValueGenerator //类型容器
 }
 
 // NewDefaultValueContainer 创建默认值容器
 func NewDefaultValueContainer() *DefaultValueContainer {
 	return &DefaultValueContainer{
-		make(map[string]GenerateFunc),
-		make(map[string]GenerateFunc),
+		make(map[string]*ValueGenerator),
+		make(map[string]*ValueGenerator),
 	}
 }
 
@@ -70,26 +76,37 @@ func (this *DefaultValueContainer) Register(name interface{}, generator interfac
 		//generator不能是接口指针
 		return ErrorInvalidGenerator.Format(t.String()).Error()
 	}
-	var f GenerateFunc = nil
+	var f *ValueGenerator = nil
 	var fName = ""
 	var err error = nil
-	if reflect.ValueOf(generator).IsNil() {
-		// generator为nil时
-		if !IsStructPtrType(t) {
-			return ErrorMustBeStructPointer.Format(t.String()).Error()
+	//chan, func, interface, map, pointer, or slice value
+	var v = reflect.ValueOf(generator)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+		{
+			if v.IsNil() {
+				// generator为nil时
+				if !IsStructPtrType(t) {
+					return ErrorMustBeStructPointer.Format(t.String()).Error()
+				}
+				//非接口类型的指针(为nil),不记录该类型的生成器,自动注入
+				f, fName, err = this.pointer(generator)
+				break
+			}
 		}
-		//非接口类型的指针(为nil),不记录该类型的生成器,自动注入
-		f, fName, err = this.pointer(generator)
-	} else {
-		if t.Kind() == reflect.Func {
-			//函数
-			f, fName, err = this.function(generator)
-		} else {
-			//非接口类型的值(非指针) 非接口类型的指针(为nil)
-			f, fName, err = this.instance(generator)
-		}
-		if err != nil {
-			return err
+		fallthrough
+	default:
+		{
+			if t.Kind() == reflect.Func {
+				//函数
+				f, fName, err = this.function(generator)
+			} else {
+				//非接口类型的值(非指针) 非接口类型的指针(为nil)
+				f, fName, err = this.instance(generator)
+			}
+			if err != nil {
+				return err
+			}
 		}
 	}
 	var isStringName bool
@@ -109,7 +126,7 @@ func (this *DefaultValueContainer) Register(name interface{}, generator interfac
 // function 生成函数类型的GenerateFunc
 //  generator:必须是有一个返回值的函数
 //  return:(生成函数,返回值的类型全名,错误)
-func (this *DefaultValueContainer) function(generator interface{}) (GenerateFunc, string, error) {
+func (this *DefaultValueContainer) function(generator interface{}) (*ValueGenerator, string, error) {
 	var value = reflect.ValueOf(generator)
 	var m, err = AnalyzeMethod("", &value)
 	if err != nil {
@@ -118,32 +135,38 @@ func (this *DefaultValueContainer) function(generator interface{}) (GenerateFunc
 	if len(m.Return) != 1 {
 		return nil, "", ErrorInvalidFunction.Error()
 	}
-	return func() interface{} {
-		var ins, err = m.Generate(this)
-		if err != nil {
-			return nil
-		}
-		var inss, ok = ins.([]interface{})
-		if !ok || len(inss) != 1 {
-			return nil
-		}
-		return inss[0]
+	return &ValueGenerator{
+		[]string{m.Return[0].String()},
+		func() interface{} {
+			var ins, err = m.Generate(this)
+			if err != nil {
+				return nil
+			}
+			var inss, ok = ins.([]interface{})
+			if !ok || len(inss) != 1 {
+				return nil
+			}
+			return inss[0]
+		},
 	}, m.Return[0].String(), nil
 }
 
 // instance 生成函数类型的GenerateFunc
 //  generator:必须是不为nil的值
 //  return:(生成函数,类型全名,错误)
-func (this *DefaultValueContainer) instance(generator interface{}) (GenerateFunc, string, error) {
-	return func() interface{} {
-		return generator
+func (this *DefaultValueContainer) instance(generator interface{}) (*ValueGenerator, string, error) {
+	return &ValueGenerator{
+		[]string{fmt.Sprint(generator)},
+		func() interface{} {
+			return generator
+		},
 	}, reflect.TypeOf(generator).String(), nil
 }
 
 // pointer 生成结构体指针类型的GenerateFunc
 //  generator:必须是结构体指针类型
 //  return:(生成函数,返回值的类型全名,错误)
-func (this *DefaultValueContainer) pointer(generator interface{}) (GenerateFunc, string, error) {
+func (this *DefaultValueContainer) pointer(generator interface{}) (*ValueGenerator, string, error) {
 	var ptr = reflect.TypeOf(generator)
 	var t = ptr.Elem()
 	var g, err = AnalyzeStruct(t)
@@ -151,22 +174,25 @@ func (this *DefaultValueContainer) pointer(generator interface{}) (GenerateFunc,
 		return nil, "", err
 	}
 	var m = g.(*StructMetadata)
-	return func() interface{} {
-		var vp, ok = this.Contains(t.String(), t)
-		if ok {
-			//如果注册了generator的结构体类型,则使用相应的vp
-			var v = vp.Value()
-			var inst = reflect.New(t)
-			inst.Elem().Set(reflect.ValueOf(v))
-			return inst.Interface()
-		} else {
-			//没有注册相应结构体类型则自动创建
-			var ins, err = m.New(this)
-			if err != nil {
-				return nil
+	return &ValueGenerator{
+		[]string{ptr.String()},
+		func() interface{} {
+			var vp, ok = this.Contains(t.String(), t)
+			if ok {
+				//如果注册了generator的结构体类型,则使用相应的vp
+				var v = vp.Value()
+				var inst = reflect.New(t)
+				inst.Elem().Set(reflect.ValueOf(v))
+				return inst.Interface()
+			} else {
+				//没有注册相应结构体类型则自动创建
+				var ins, err = m.New(this)
+				if err != nil {
+					return nil
+				}
+				return ins
 			}
-			return ins
-		}
+		},
 	}, ptr.String(), nil
 }
 
