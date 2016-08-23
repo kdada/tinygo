@@ -41,7 +41,7 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 				}
 				//路径中不能包含非法内容
 				if !containDotDot {
-					var filePath = filepath.Join(this.path, strings.Join(pathSegs[this.Context.Matched()-1:], "/"))
+					var filePath = filepath.Join(this.path, strings.Join(pathSegs[this.Context.Matched()-1:len(pathSegs)-1], "/"))
 					var f, err = os.Stat(filePath)
 					if err == nil {
 						if !context.Processor.Config.List && f.IsDir() {
