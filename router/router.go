@@ -51,14 +51,16 @@ type RouterExcutorGenerator func() RouterExcutor
 
 // 路由上下文
 type RouterContext interface {
-	// Segments 返回可匹配路由段
+	// Segments 返回可匹配路由段(不包含已匹配的路由段)
 	Segments() []string
-	// Match 匹配路由数量
+	// AllSegments 返回所有路由段
+	AllSegments() []string
+	// Match 匹配路由段数量
 	Match(count int)
-	// Unmatch 失配路由数量
+	// Unmatch 失配路由段数量
 	Unmatch(count int)
-	// Pure 返回当前是否未匹配任何路由
-	Pure() bool
+	// Matched 返回当前已匹配的路由段数量
+	Matched() int
 	// Value 返回路由值
 	Value(name string) (string, bool)
 	// SetValue 设置路由值

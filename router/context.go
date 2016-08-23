@@ -29,6 +29,11 @@ func (this *BaseContext) Segments() []string {
 	return this.Segs[this.Level:]
 }
 
+// AllSegments 返回所有路由段
+func (this *BaseContext) AllSegments() []string {
+	return this.Segs
+}
+
 // Match 匹配数量
 func (this *BaseContext) Match(count int) {
 	this.Level += count
@@ -37,6 +42,11 @@ func (this *BaseContext) Match(count int) {
 // Unmatch 失配数量
 func (this *BaseContext) Unmatch(count int) {
 	this.Level -= count
+}
+
+// Matched 返回当前已匹配的路由段数量(即经过的路由数量)
+func (this *BaseContext) Matched() int {
+	return this.Level
 }
 
 // Pure 返回当前是否未匹配任何路由

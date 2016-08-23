@@ -132,7 +132,7 @@ func (this *BaseRouter) Find(context RouterContext) (Router, bool) {
 			//无法匹配当前正则路由,直接返回
 			return nil, false
 		}
-	} else if context.Pure() {
+	} else if context.Matched() == 0 {
 		//当前是常规根路由,则进行路由名称匹配
 		if this.unify(segs[0]) != this.unify(this.MatchString()) {
 			return nil, false
