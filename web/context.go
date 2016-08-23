@@ -384,7 +384,7 @@ func (this *Context) mapTo(value reflect.Value, data ViewData) {
 func (this *Context) Redispatch(path string) *UserDefinedResult {
 	var result = new(UserDefinedResult)
 	result.Status = StatusCodeRedispatch
-	result.Message = path
+	result.Msg = path
 	return result
 }
 

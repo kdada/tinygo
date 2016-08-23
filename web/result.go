@@ -288,8 +288,8 @@ func (this *PartialViewResult) WriteTo(writer io.Writer) error {
 
 // 自定义返回结果
 type UserDefinedResult struct {
-	Status  StatusCode //状态码
-	Message string     //消息
+	Status StatusCode //状态码
+	Msg    string     //消息
 }
 
 // NewUserDefinedResult 创建自定义的返回结果
@@ -307,11 +307,11 @@ func (this *UserDefinedResult) Code() StatusCode {
 
 // Message 返回状态信息
 func (this *UserDefinedResult) Message() string {
-	return this.Message
+	return this.Msg
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *UserDefinedResult) WriteTo(writer io.Writer) error {
-	var _, err = writer.Write([]byte(this.Message))
+	var _, err = writer.Write([]byte(this.Msg))
 	return err
 }
