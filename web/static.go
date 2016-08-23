@@ -31,7 +31,7 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 			var result Result = nil
 			if context.HttpContext.Request.Method == "GET" {
 				//返回文件
-				var pathSegs = context.Segments()
+				var pathSegs = context.AllSegments()
 				var containDotDot = false
 				for _, s := range pathSegs {
 					if strings.Contains(s, "..") {
@@ -39,25 +39,17 @@ func (this *StaticExecutor) Execute() (interface{}, error) {
 						break
 					}
 				}
+				//路径中不能包含非法内容
 				if !containDotDot {
-					var r = this.Router()
-					var count = 0
-					for r != nil {
-						r = r.Parent()
-						count++
-					}
-					var filePath = filepath.Join(this.path, strings.Join(pathSegs[count:len(pathSegs)-1], "/"))
-					if !context.Processor.Config.List {
-						var f, err = os.Stat(filePath)
-						if err != nil || f.IsDir() {
+					var filePath = filepath.Join(this.path, strings.Join(pathSegs[this.Context.Matched()-1:], "/"))
+					var f, err = os.Stat(filePath)
+					if err == nil {
+						if !context.Processor.Config.List && f.IsDir() {
 							result = context.NotFound()
 						} else {
 							result = context.File(filePath)
 						}
-					} else {
-						result = context.File(filePath)
 					}
-
 				}
 			}
 			if result == nil {
