@@ -58,23 +58,23 @@ type HttpResult interface {
 }
 
 // 公共http结果
-type commonHttpResult struct {
+type CommonHttpResult struct {
 	Status      StatusCode //状态码
 	ContentType string     //内容类型
 }
 
 // Code 返回状态码
-func (this *commonHttpResult) Code() StatusCode {
+func (this *CommonHttpResult) Code() StatusCode {
 	return this.Status
 }
 
 // Message 返回状态信息
-func (this *commonHttpResult) Message() string {
+func (this *CommonHttpResult) Message() string {
 	return ""
 }
 
-// WriteHeader 写入响应头信息
-func (this *commonHttpResult) WriteHeader(writer io.Writer) (http.ResponseWriter, error) {
+// SetHeader 设置响应头信息
+func (this *CommonHttpResult) SetHeader(writer io.Writer) (http.ResponseWriter, error) {
 	var w, ok = writer.(http.ResponseWriter)
 	if !ok {
 		return nil, ErrorInvalidWriter.Error()
@@ -82,35 +82,39 @@ func (this *commonHttpResult) WriteHeader(writer io.Writer) (http.ResponseWriter
 	if this.ContentType != "" {
 		w.Header().Set("Content-Type", this.ContentType)
 	}
-	w.WriteHeader(int(this.Status))
 	return w, nil
+}
+
+// WriteHeader 写入响应头信息,对于
+func (this *CommonHttpResult) WriteHeader(writer http.ResponseWriter) {
+	writer.WriteHeader(int(this.Status))
 }
 
 // 文件结果
 type FileResult struct {
-	commonHttpResult
-	context  *Context //请求上下文
-	filePath string   //文件路径
+	CommonHttpResult
+	Context  *Context //请求上下文
+	FilePath string   //本地文件路径
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *FileResult) WriteTo(writer io.Writer) error {
-	var w, ok = writer.(http.ResponseWriter)
-	if !ok {
-		return ErrorInvalidWriter.Error()
-	}
-	var f, e = os.Open(this.filePath)
+	var w, e = this.SetHeader(writer)
 	if e != nil {
 		return e
 	}
-	var info, err = f.Stat()
+	var f, err = os.Open(this.FilePath)
 	if err != nil {
 		return err
 	}
+	var info, err2 = f.Stat()
+	if err2 != nil {
+		return err2
+	}
 	if info.IsDir() {
-		err = this.dir(this.context.HttpContext.Request, w, f, info)
+		err = this.dir(this.Context.HttpContext.Request, w, f, info)
 	} else {
-		err = this.file(this.context.HttpContext.Request, w, f, info)
+		err = this.file(this.Context.HttpContext.Request, w, f, info)
 	}
 	return err
 }
@@ -156,133 +160,136 @@ func (this *FileResult) dir(r *http.Request, w http.ResponseWriter, f *os.File, 
 
 // Json结果
 type JsonResult struct {
-	commonHttpResult
-	obj interface{} //需要返回的对象
+	CommonHttpResult
+	Obj interface{} //需要返回的对象
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *JsonResult) WriteTo(writer io.Writer) error {
-	this.ContentType = "application/json; charset=utf-8"
-	var w, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.SetHeader(writer)
 	if err != nil {
 		return err
 	}
-	var bytes, e = json.Marshal(this.obj)
+	var bytes, e = json.Marshal(this.Obj)
 	if e != nil {
 		return e
 	}
+	this.WriteHeader(w)
 	_, e = w.Write(bytes)
 	return e
 }
 
 // Xml结果
 type XmlResult struct {
-	commonHttpResult
-	obj interface{} //需要返回的对象
+	CommonHttpResult
+	Obj interface{} //需要返回的对象
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *XmlResult) WriteTo(writer io.Writer) error {
-	this.ContentType = "application/xml; charset=utf-8"
-	var w, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.SetHeader(writer)
 	if err != nil {
 		return err
 	}
-	var bytes, e = xml.Marshal(this.obj)
+	var bytes, e = xml.Marshal(this.Obj)
 	if e != nil {
 		return e
 	}
+	this.WriteHeader(w)
 	_, e = w.Write(bytes)
 	return e
 }
 
 // 404结果
 type NotFoundResult struct {
-	commonHttpResult
-	context *Context //请求上下文
+	CommonHttpResult
+	Context *Context //请求上下文
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *NotFoundResult) WriteTo(writer io.Writer) error {
-	var r, ok = writer.(http.ResponseWriter)
-	if !ok {
-		return ErrorInvalidWriter.Error()
+	var w, err = this.SetHeader(writer)
+	if err != nil {
+		return err
 	}
-	http.NotFound(r, this.context.HttpContext.Request)
+	http.NotFound(w, this.Context.HttpContext.Request)
 	return nil
 }
 
 // 重定向结果
 type RedirectResult struct {
-	commonHttpResult
-	context *Context //请求上下文
-	url     string   //重定向地址
+	CommonHttpResult
+	Context *Context //请求上下文
+	Url     string   //重定向地址
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *RedirectResult) WriteTo(writer io.Writer) error {
-	var r, ok = writer.(http.ResponseWriter)
-	if !ok {
-		return ErrorInvalidWriter.Error()
+	var w, err = this.SetHeader(writer)
+	if err != nil {
+		return err
 	}
-	http.Redirect(r, this.context.HttpContext.Request, this.url, int(this.Status))
+	http.Redirect(w, this.Context.HttpContext.Request, this.Url, int(this.Status))
 	return nil
 }
 
 // 数据结果
 type DataResult struct {
-	commonHttpResult
-	data []byte
+	CommonHttpResult
+	Data []byte
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *DataResult) WriteTo(writer io.Writer) error {
-	var w, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.SetHeader(writer)
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(this.data)
+	this.WriteHeader(w)
+	_, err = w.Write(this.Data)
 	return err
 }
 
 // 视图结果
 type ViewResult struct {
-	commonHttpResult
-	templates *template.ViewTemplates
-	path      string
-	data      interface{}
+	CommonHttpResult
+	Templates *template.ViewTemplates
+	Path      string
+	Data      interface{}
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *ViewResult) WriteTo(writer io.Writer) error {
-	var w, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.SetHeader(writer)
 	if err != nil {
 		return err
 	}
-	return this.templates.ExecView(w, this.path, this.data)
+	this.WriteHeader(w)
+	return this.Templates.ExecView(w, this.Path, this.Data)
 }
 
 // 部分视图结果
 type PartialViewResult struct {
-	commonHttpResult
-	templates *template.ViewTemplates
-	path      string
-	data      interface{}
+	CommonHttpResult
+	Templates *template.ViewTemplates
+	Path      string
+	Data      interface{}
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *PartialViewResult) WriteTo(writer io.Writer) error {
-	var w, err = this.commonHttpResult.WriteHeader(writer)
+	var w, err = this.SetHeader(writer)
 	if err != nil {
 		return err
 	}
-	return this.templates.ExecPartialView(w, this.path, this.data)
+	this.WriteHeader(w)
+	return this.Templates.ExecPartialView(w, this.Path, this.Data)
 }
 
 // 自定义返回结果
 type UserDefinedResult struct {
-	Status StatusCode //状态码
-	Msg    string     //消息
+	Status  StatusCode //状态码
+	Message string     //消息
 }
 
 // NewUserDefinedResult 创建自定义的返回结果
@@ -300,11 +307,11 @@ func (this *UserDefinedResult) Code() StatusCode {
 
 // Message 返回状态信息
 func (this *UserDefinedResult) Message() string {
-	return this.Msg
+	return this.Message
 }
 
 // WriteTo 将Result的内容写入writer
 func (this *UserDefinedResult) WriteTo(writer io.Writer) error {
-	var _, err = writer.Write([]byte(this.Msg))
+	var _, err = writer.Write([]byte(this.Message))
 	return err
 }
