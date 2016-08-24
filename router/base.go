@@ -124,7 +124,7 @@ func (this *BaseRouter) AddChild(router Router) bool {
 		} else {
 			//如果存在该名称的子路由
 			var routerChildren = router.childrenMap()
-			var routerMapChildren = router.childrenMap()
+			var routerMapChildren = router.regchildrenMap()
 			for _, v := range routerChildren {
 				child.AddChild(v)
 			}
