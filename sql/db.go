@@ -8,14 +8,32 @@ type Result struct {
 	err    error      //执行错误
 }
 
-// LastInsertId 返回Insert的记录的Id
-func (this *Result) LastInsertId() (int64, error) {
+// LastInsertId 返回Insert的记录的Id(int64)
+func (this *Result) LastInsertId64() (int64, error) {
+	if this.err != nil {
+		return 0, this.err
+	}
 	return this.result.LastInsertId()
 }
 
-// RowsAffected 返回执行过程中影响的行数
-func (this *Result) RowsAffected() (int64, error) {
+// RowsAffected 返回执行过程中影响的行数(int64)
+func (this *Result) RowsAffected64() (int64, error) {
+	if this.err != nil {
+		return 0, this.err
+	}
 	return this.result.RowsAffected()
+}
+
+// LastInsertId 返回Insert的记录的Id
+func (this *Result) LastInsertId() (int, error) {
+	var r, err = this.LastInsertId64()
+	return int(r), err
+}
+
+// RowsAffected 返回执行过程中影响的行数
+func (this *Result) RowsAffected() (int, error) {
+	var r, err = this.RowsAffected64()
+	return int(r), err
 }
 
 // Error 返回执行过程中的错误
