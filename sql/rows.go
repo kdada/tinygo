@@ -8,9 +8,6 @@ import (
 	"time"
 )
 
-// 返回结果
-type Result sql.Result
-
 // 数据行
 type Rows struct {
 	rows    *sql.Rows

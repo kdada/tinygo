@@ -2,6 +2,27 @@ package sql
 
 import "database/sql"
 
+// 执行结果
+type Result struct {
+	result sql.Result //执行返回结果
+	err    error      //执行错误
+}
+
+// LastInsertId 返回Insert的记录的Id
+func (this *Result) LastInsertId() (int64, error) {
+	return this.result.LastInsertId()
+}
+
+// RowsAffected 返回执行过程中影响的行数
+func (this *Result) RowsAffected() (int64, error) {
+	return this.result.RowsAffected()
+}
+
+// Error 返回执行过程中的错误
+func (this *Result) Error() error {
+	return this.err
+}
+
 // 数据库链接
 type DB struct {
 	db          *sql.DB //原始数据库链接
@@ -21,12 +42,15 @@ func (this *DB) Query(sqlStr string, params ...interface{}) *Rows {
 }
 
 // Exec 执行sql
-func (this *DB) Exec(sqlStr string, params ...interface{}) (Result, error) {
+func (this *DB) Exec(sqlStr string, params ...interface{}) *Result {
+	var result sql.Result
+	var err error
 	if this.IsTransaction() {
-		return this.transaction.Exec(sqlStr, params...)
+		result, err = this.transaction.Exec(sqlStr, params...)
 	} else {
-		return this.db.Exec(sqlStr, params...)
+		result, err = this.db.Exec(sqlStr, params...)
 	}
+	return &Result{result, err}
 }
 
 // IsTransaction 返回当前是否开启了事务
