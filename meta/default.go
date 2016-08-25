@@ -56,6 +56,38 @@ func (this *DefaultValueContainer) Contains(name string, t reflect.Type) (ValueP
 	return nil, false
 }
 
+// Value 根据name生成相应的实例
+//  name:
+//    1.非空字符串:表示使用指定名称的生成器生成实例
+//    2.非接口类型的值:表示使用指定非接口类型的生成器生成实例
+//    3.值为nil的接口指针(例如:(*interface{})(nil)):表示使用指定接口类型的生成器生成实例
+func (this *DefaultValueContainer) Value(name interface{}) (interface{}, bool) {
+	if name == nil {
+		return nil, false
+	}
+	var trueName, isStringName = this.TranslateName(name)
+	var vg *ValueGenerator
+	var ok bool
+	if isStringName {
+		vg, ok = this.NameContainer[trueName]
+	} else {
+		vg, ok = this.TypeContainer[trueName]
+	}
+	if ok {
+		return vg.Func(), true
+	}
+	return nil, false
+}
+
+// Value 根据类型全名生成相应的实例
+func (this *DefaultValueContainer) TypeValue(typeFullName string) (interface{}, bool) {
+	var vg, ok = this.TypeContainer[typeFullName]
+	if ok {
+		return vg.Func(), true
+	}
+	return nil, false
+}
+
 // Register 注册指定名称或类型的生成器
 //  name:
 //    1.非空字符串:表示注册的是指定名称的生成器
