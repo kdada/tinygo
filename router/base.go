@@ -55,6 +55,20 @@ func (this *BaseRouter) MatchString() string {
 	return this.match
 }
 
+// SetParent 设置当前路由父路由,当前路由必须是父路由的子路由
+func (this *BaseRouter) SetParent(router Router) error {
+	var r, ok = router.Child(this.name)
+	var x, ok2 = r.(*BaseRouter)
+	if ok && ok2 && x == this {
+		if this.parent != nil && this.parent != router {
+			this.parent.RemoveChild(this.name)
+		}
+		this.parent = router
+		return nil
+	}
+	return ErrorInvalidParentRouter.Error()
+}
+
 // Normal 返回当前路由是否为通常路由,通常路由可以使用MatchString()返回的字符串进行相等匹配
 func (this *BaseRouter) Normal() bool {
 	return !this.reg
