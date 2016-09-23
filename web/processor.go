@@ -8,6 +8,7 @@ import (
 
 	"github.com/kdada/tinygo/connector"
 	"github.com/kdada/tinygo/log"
+	"github.com/kdada/tinygo/meta"
 	"github.com/kdada/tinygo/router"
 	"github.com/kdada/tinygo/session"
 	"github.com/kdada/tinygo/template"
@@ -18,15 +19,16 @@ type ParamTypeFunc func(context *Context, name string, t reflect.Type) interface
 
 // HttpProcessor 用于协调http连接器和路由,并管理Http应用的所有内容
 type HttpProcessor struct {
-	Root             router.Router                 //根路由
-	Config           *HttpConfig                   //http配置
-	Logger           log.Logger                    //日志记录
-	SessionContainer session.SessionContainer      //Session容器
-	CSRFContainer    session.SessionContainer      //Csrf容器
-	Finders          map[string]ContextValueFinder //Context单类型值查找器
-	MutiTypeFinders  []ContextValueFinder          //Context多类型值查找器
-	Templates        *template.ViewTemplates       //视图模板信息
-	Event            HttpProcessorEvent            //处理器事件
+	Root                  router.Router                 //根路由
+	Config                *HttpConfig                   //http配置
+	Logger                log.Logger                    //日志记录
+	SessionContainer      session.SessionContainer      //Session容器
+	CSRFContainer         session.SessionContainer      //Csrf容器
+	Finders               map[string]ContextValueFinder //Context单类型值查找器
+	MutiTypeFinders       []ContextValueFinder          //Context多类型值查找器
+	DefaultValueContainer meta.ValueContainer           //web执行器默认使用的值容器
+	Templates             *template.ViewTemplates       //视图模板信息
+	Event                 HttpProcessorEvent            //处理器事件
 }
 
 // NewHttpProcessor 创建Http处理器
@@ -62,7 +64,10 @@ func NewHttpProcessor(root router.Router, config *HttpConfig) (*HttpProcessor, e
 
 	//注册参数类型方法
 	processor.Finders = make(map[string]ContextValueFinder)
+	processor.MutiTypeFinders = make([]ContextValueFinder, 0, 1)
 	register(processor)
+	//默认值提供器为meta包的全局值提供器
+	processor.DefaultValueContainer = meta.GlobalValueContainer
 	//创建视图模板信息
 	processor.Templates = template.NewViewTemplates(config.TemplateConfig)
 	if config.Precompile {
@@ -108,6 +113,11 @@ func (this *HttpProcessor) RegisterFinder(t reflect.Type, finder ContextValueFin
 // RegisterMutiTypeFinder 注册多类型的值查找器
 func (this *HttpProcessor) RegisterMutiTypeFinder(finder ContextValueFinder) {
 	this.MutiTypeFinders = append(this.MutiTypeFinders, finder)
+}
+
+// SetDefaultValueContainer 设置默认的值容器
+func (this *HttpProcessor) SetDefaultValueContainer(container meta.ValueContainer) {
+	this.DefaultValueContainer = container
 }
 
 // createCookie 创建cookie

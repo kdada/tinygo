@@ -25,7 +25,7 @@ func (this *ContextValueProvider) Value() interface{} {
 }
 
 // http上下文值容器
-// 优先级:web.Processor.Finders > web.Processor.MutiTypeFinders > meta.GlobalValueContainer
+// 优先级:web.Processor.Finders > web.Processor.MutiTypeFinders > web.Processor.ValueContainer
 type ContextValueContainer struct {
 	Context *Context
 }
@@ -62,5 +62,9 @@ func (this *ContextValueContainer) Contains(name string, t reflect.Type) (meta.V
 			t,
 		}, true
 	}
-	return meta.GlobalValueContainer.Contains(name, t)
+	var vc = this.Context.Processor.DefaultValueContainer
+	if vc != nil {
+		return vc.Contains(name, t)
+	}
+	return nil, false
 }
