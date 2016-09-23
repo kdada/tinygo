@@ -4,8 +4,8 @@ import "strings"
 
 // HttpProcessor事件接口
 type HttpProcessorEvent interface {
-	// Request 每次出现一个新请求的时候触发
-	Request(processor *HttpProcessor, context *Context)
+	// Request 每次出现一个新请求的时候触发,返回值决定是否处理该请求
+	Request(processor *HttpProcessor, context *Context) bool
 	// RequestFinish 每次请求正确执行完成的时候触发
 	RequestFinish(processor *HttpProcessor, context *Context, result []interface{})
 	// Error 请求过程中出现任何错误时触发,出现错误时context需要检查是否为nil后才能使用
@@ -16,9 +16,9 @@ type HttpProcessorEvent interface {
 type DefaultHttpProcessorEvent struct {
 }
 
-// Request 每次出现一个新请求的时候触发
-func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context *Context) {
-
+// Request 每次出现一个新请求的时候触发,返回值决定是否处理该请求
+func (this *DefaultHttpProcessorEvent) Request(processor *HttpProcessor, context *Context) bool {
+	return true
 }
 
 // RequestFinish 每次请求执行完成的时候触发

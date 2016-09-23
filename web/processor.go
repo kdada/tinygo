@@ -170,8 +170,13 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 		context.Processor = this
 		this.ResolveSession(context)
 		if this.Event != nil {
-			this.Event.Request(this, context)
+			var ctn = this.Event.Request(this, context)
+			//确定是否继续执行
+			if !ctn {
+				return
+			}
 		}
+		//路由匹配
 		var executor, ok = this.Root.Match(context)
 		if ok {
 			var r, err = executor.Execute()
@@ -187,6 +192,7 @@ func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 						result = []interface{}{r}
 					}
 				}
+				//结果处理
 				this.Event.RequestFinish(this, context, result)
 			}
 		} else if this.Event != nil {
