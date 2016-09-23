@@ -36,7 +36,7 @@ func (this *Manager) Run() {
 			this.Event.InitFailed(this, app, err)
 			continue
 		}
-		go func() {
+		go func(app App) {
 			defer func() {
 				if err := recover(); err != nil {
 					if this.Event != nil {
@@ -55,7 +55,7 @@ func (this *Manager) Run() {
 					this.Event.RunFinished(this, app)
 				}
 			}
-		}()
+		}(app)
 		if this.Event != nil {
 			this.Event.AferRunning(this, app)
 		}
