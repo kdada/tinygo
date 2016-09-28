@@ -54,14 +54,14 @@ type FormFileCVF struct {
 // Contains 查找context是否包含指定的值
 func (this *FormFileCVF) Contains(context *Context, name string, t reflect.Type) bool {
 	var form = context.HttpContext.Request.MultipartForm
-	if form != nil {
+	if form == nil {
 		var err = context.HttpContext.Request.ParseMultipartForm(int64(context.Processor.Config.MaxRequestMemory))
 		if err != nil {
 			return false
 		}
 		form = context.HttpContext.Request.MultipartForm
 	}
-	var _, ok = form.Value[name]
+	var _, ok = form.File[name]
 	return ok
 }
 
