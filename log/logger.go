@@ -3,6 +3,9 @@ package log
 import (
 	"container/list"
 	"fmt"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -15,6 +18,7 @@ type SimpleLogger struct {
 	logWriter LogWriter   //日志写入
 	cloesd    bool        //日志是否已经关闭
 	async     bool        //日志是否异步输出
+	skip      int         //日志输出文件信息时跳过的Caller数量
 }
 
 // NewSimpleLogger 创建日志记录器,默认同步模式
@@ -26,13 +30,14 @@ func NewSimpleLogger(logWriter LogWriter) *SimpleLogger {
 		logWriter,
 		false,
 		false,
+		2,
 	}
 }
 
 // writeLog 写入日志
 func (this *SimpleLogger) writeLog(info string, level LogLevel) {
 	if !this.cloesd && level&this.logLevel > 0 {
-		info = time.Now().Format("2006-01-02 15:04:05.000000") + info
+		info = time.Now().Format("2006-01-02 15:04:05.000000 ") + info
 		this.logmu.Lock()
 		if this.async {
 			this.logList.PushBack(info)
@@ -43,29 +48,40 @@ func (this *SimpleLogger) writeLog(info string, level LogLevel) {
 	}
 }
 
+// file 返回调用Logger的函数位置
+func (this *SimpleLogger) position(prefix string) string {
+	if this.skip >= 2 {
+		var _, file, line, ok = runtime.Caller(this.skip)
+		if ok {
+			return prefix + filepath.Base(file) + "(" + strconv.Itoa(line) + "):"
+		}
+	}
+	return prefix
+}
+
 // Debug 写入调试信息
 func (this *SimpleLogger) Debug(info ...interface{}) {
-	this.writeLog("[Debug]"+fmt.Sprint(info), LogLevelDebug)
+	this.writeLog(this.position("[Debug]")+fmt.Sprint(info), LogLevelDebug)
 }
 
 // Info 写入一般信息
 func (this *SimpleLogger) Info(info ...interface{}) {
-	this.writeLog("[Info]"+fmt.Sprint(info), LogLevelInfo)
+	this.writeLog(this.position("[Info]")+fmt.Sprint(info), LogLevelInfo)
 }
 
 // Warn 写入警告信息
 func (this *SimpleLogger) Warn(info ...interface{}) {
-	this.writeLog("[Warn]"+fmt.Sprint(info), LogLevelWarn)
+	this.writeLog(this.position("[Warn]")+fmt.Sprint(info), LogLevelWarn)
 }
 
 // Error 写入错误信息
 func (this *SimpleLogger) Error(info ...interface{}) {
-	this.writeLog("[Error]"+fmt.Sprint(info), LogLevelError)
+	this.writeLog(this.position("[Error]")+fmt.Sprint(info), LogLevelError)
 }
 
 // Fatal 写入崩溃信息
 func (this *SimpleLogger) Fatal(info ...interface{}) {
-	this.writeLog("[Fatal]"+fmt.Sprint(info), LogLevelFatal)
+	this.writeLog(this.position("[Fatal]")+fmt.Sprint(info), LogLevelFatal)
 }
 
 // LogLevel 得到日志等级是否输出
@@ -111,6 +127,11 @@ func (this *SimpleLogger) SetAsync(async bool) {
 		}
 		this.logmu.Unlock()
 	}
+}
+
+// LogPosition skip为跳过的Caller数量,skip小于2时关闭文件位置记录的功能
+func (this *SimpleLogger) SetSkip(skip int) {
+	this.skip = skip
 }
 
 // Cloesd 日志是否已关闭
