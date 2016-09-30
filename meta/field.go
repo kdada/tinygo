@@ -106,11 +106,13 @@ func AnalyzeField(field *reflect.StructField) (*FieldMetadata, error) {
 		var arr = vldReg.FindStringSubmatch(tag)
 		if len(arr) == 2 {
 			var src = arr[1]
-			var vld, err = validator.NewValidator("string", src)
-			if err != nil {
-				return nil, err
+			if len(src) > 0 {
+				var vld, err = validator.NewValidator("string", src)
+				if err != nil {
+					return nil, err
+				}
+				fMd.Validator = vld
 			}
-			fMd.Validator = vld
 		}
 	}
 	return fMd, nil
