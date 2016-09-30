@@ -64,6 +64,9 @@ func (this *Parser) Parse() (e error) {
 	root.SetLeft(this.Tree)
 	this.clean(root.Left())
 	this.Tree = root.Left()
+	if this.Tree == nil {
+		return ErrorIllegalParser.Error()
+	}
 	this.Tree.SetParent(nil)
 	return nil
 }

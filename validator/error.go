@@ -29,6 +29,7 @@ const (
 	ErrorInvalidKind             Error = "ErrorInvalidKind(V10010):无效的验证器类型(%s)"
 	ErrorIllegalNode             Error = "ErrorIllegalNode(V10011):严重错误,当前验证器出现非法节点(%s)"
 	ErrorIllegalParam            Error = "ErrorIllegalParam(V10012):严重错误,当前验证器出现非法参数(%s)"
+	ErrorIllegalParser           Error = "ErrorIllegalParser(V10020):严重错误,当前解析器无法正确的解析字符串"
 
 	ErrorInvalidFuncName        Error = "ErrorInvalidFuncName(V10020):无效的函数名称(%s)"
 	ErrorMustBeFunc             Error = "ErrorMustBeFunc(V10021):使用了非函数类型(%s)进行注册"
