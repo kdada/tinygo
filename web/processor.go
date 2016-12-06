@@ -175,9 +175,8 @@ func (this *HttpProcessor) ResolveSession(context *Context) {
 //  data:连接携带的数据
 func (this *HttpProcessor) Dispatch(segments []string, data interface{}) {
 	var ct = data.(*connector.HttpContext)
-	var context, err = NewContext(segments, ct)
+	var context, err = NewContext(segments, ct, this)
 	if err == nil {
-		context.Processor = this
 		this.ResolveSession(context)
 		if this.Event != nil {
 			var ctn = this.Event.Request(this, context)

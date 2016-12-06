@@ -70,8 +70,14 @@ type Context struct {
 }
 
 // NewContext 创建上下文信息
-func NewContext(segments []string, context *connector.HttpContext) (*Context, error) {
-	var err = context.Request.ParseForm()
+func NewContext(segments []string, context *connector.HttpContext, processor *HttpProcessor) (*Context, error) {
+	var contentType = context.Request.Header.Get("Content-Type")
+	var err error
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		err = context.Request.ParseMultipartForm(int64(processor.Config.MaxRequestMemory))
+	} else {
+		err = context.Request.ParseForm()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -79,6 +85,7 @@ func NewContext(segments []string, context *connector.HttpContext) (*Context, er
 	var c = new(Context)
 	c.Segs = append(segments, method)
 	c.HttpContext = context
+	c.Processor = processor
 	return c, nil
 }
 
@@ -101,7 +108,7 @@ func (this *Context) Value(name string) (string, bool) {
 	return this.HttpContext.Request.Form.Get(name), true
 }
 
-// Value 返回值数组
+// Values 返回值数组
 func (this *Context) Values(name string) ([]string, bool) {
 	var result, ok = this.HttpContext.Request.Form[name]
 	return result, ok
@@ -126,7 +133,7 @@ func (this *Context) ParamString(key string) (string, error) {
 	return "", ErrorParamNotExist.Error()
 }
 
-// ParamString 获取http参数字符串数组
+// ParamStringArray 获取http参数字符串数组
 func (this *Context) ParamStringArray(key string) ([]string, error) {
 	var result, ok = this.Values(key)
 	if ok {
@@ -135,7 +142,7 @@ func (this *Context) ParamStringArray(key string) ([]string, error) {
 	return nil, ErrorParamNotExist.Error()
 }
 
-// ParamString 获取http参数字符串
+// ParamBool 获取http参数Bool
 func (this *Context) ParamBool(key string) (bool, error) {
 	var result, err = this.ParamString(key)
 	if err == nil {
@@ -144,7 +151,7 @@ func (this *Context) ParamBool(key string) (bool, error) {
 	return false, err
 }
 
-// ParamString 获取http参数字符串
+// ParamInt 获取http参数Int
 func (this *Context) ParamInt(key string) (int, error) {
 	var result, err = this.ParamString(key)
 	if err == nil {
@@ -155,7 +162,7 @@ func (this *Context) ParamInt(key string) (int, error) {
 
 }
 
-// ParamString 获取http参数字符串
+// ParamFloat 获取http参数Float
 func (this *Context) ParamFloat(key string) (float64, error) {
 	var result, err = this.ParamString(key)
 	if err == nil {
@@ -164,7 +171,7 @@ func (this *Context) ParamFloat(key string) (float64, error) {
 	return 0, err
 }
 
-// ParamString 获取http参数文件
+// ParamFile 获取http参数文件
 func (this *Context) ParamFile(key string) (*FormFile, error) {
 	var file, header, err = this.HttpContext.Request.FormFile(key)
 	if err == nil {
@@ -173,7 +180,7 @@ func (this *Context) ParamFile(key string) (*FormFile, error) {
 	return nil, err
 }
 
-// ParamString 获取http参数文件数组
+// ParamFiles 获取http参数文件数组
 func (this *Context) ParamFiles(key string) ([]*FormFile, error) {
 	var r = this.HttpContext.Request
 	if r.MultipartForm == nil {
