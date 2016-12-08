@@ -185,10 +185,12 @@ func (this *MemSessionContainer) Session(sessionId string) (Session, bool) {
 		return nil, false
 	}
 	this.rwm.RLock()
-	defer this.rwm.RUnlock()
 	var ss, ok = this.sessions[sessionId]
+	this.rwm.RUnlock()
 	if ok {
 		if ss.Dead() {
+			this.rwm.Lock()
+			defer this.rwm.Unlock()
 			delete(this.sessions, sessionId)
 			return nil, false
 		}
