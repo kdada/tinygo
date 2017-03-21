@@ -76,7 +76,7 @@ func (this *Rows) parse(value reflect.Value, index int, fields []interface{}) er
 			if value.Type().String() == "time.Time" {
 				//时间结构体解析
 				var v = *(fields[index].(*interface{}))
-				if reflect.TypeOf(v).String() == "time.Time" {
+				if v != nil && reflect.TypeOf(v).String() == "time.Time" {
 					value.Set(reflect.ValueOf(v))
 				} else {
 					var s = sql.NullString{}
