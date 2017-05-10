@@ -148,7 +148,7 @@ func NewCustomControllerRouter(instance interface{}, name string, methodsInfo []
 		if rname == "" {
 			rname = m.Name
 		}
-		var mr = NewSpaceRouter(info.RouterName)
+		var mr = NewSpaceRouter(rname)
 		var excutor = NewAdvancedExecutor(m)
 		mr.AddChildren(HttpResultRouter(string(info.HttpMethod), func() router.RouterExcutor {
 			return excutor
