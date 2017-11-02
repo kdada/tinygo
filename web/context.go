@@ -264,7 +264,7 @@ func (this *Context) Api(data interface{}) HttpResult {
 			if strings.Index(accept, "application/json") >= 0 {
 				return this.Json(data)
 			} else if strings.Index(accept, "application/xml") >= 0 {
-				return this.Json(data)
+				return this.Xml(data)
 			}
 		}
 	}
