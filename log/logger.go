@@ -16,7 +16,7 @@ type SimpleLogger struct {
 	logList   *list.List  //日志链表
 	logmu     *sync.Mutex //锁
 	logWriter LogWriter   //日志写入
-	cloesd    bool        //日志是否已经关闭
+	closed    bool        //日志是否已经关闭
 	async     bool        //日志是否异步输出
 	skip      int         //日志输出文件信息时跳过的Caller数量
 }
@@ -36,7 +36,7 @@ func NewSimpleLogger(logWriter LogWriter) *SimpleLogger {
 
 // writeLog 写入日志
 func (this *SimpleLogger) writeLog(info string, level LogLevel) {
-	if !this.cloesd && level&this.logLevel > 0 {
+	if !this.closed && level&this.logLevel > 0 {
 		info = time.Now().Format("2006-01-02 15:04:05.000000 ") + info
 		this.logmu.Lock()
 		if this.async {
@@ -134,15 +134,15 @@ func (this *SimpleLogger) SetSkip(skip int) {
 	this.skip = skip
 }
 
-// Cloesd 日志是否已关闭
-func (this *SimpleLogger) Cloesd() bool {
-	return this.cloesd
+// Closed 日志是否已关闭
+func (this *SimpleLogger) Closed() bool {
+	return this.closed
 }
 
 // Close 关闭日志 关闭后无法再使用
 func (this *SimpleLogger) Close() {
-	if !this.Cloesd() {
-		this.cloesd = true
+	if !this.Closed() {
+		this.closed = true
 		this.logWriter.Close()
 	}
 }

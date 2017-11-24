@@ -25,8 +25,8 @@ type Logger interface {
 	SetAsync(async bool)
 	// Close 关闭日志 关闭后无法再进行写入操作
 	Close()
-	// Cloesd 日志是否关闭
-	Cloesd() bool
+	// Closed 日志是否关闭
+	Closed() bool
 }
 
 // 日志创建器
