@@ -12,6 +12,7 @@ type MemSession struct {
 	sessionId string                 //会话id
 	data      map[string]interface{} //数据
 	deadline  int                    //死亡时间(秒),从1970年开始
+	rwm       sync.RWMutex
 }
 
 // newMemSession 创建内存Session
@@ -29,65 +30,71 @@ func (this *MemSession) SessionId() string {
 
 // Value 获取值
 func (this *MemSession) Value(key string) (interface{}, bool) {
+	this.rwm.RLock()
+	defer this.rwm.RUnlock()
 	v, ok := this.data[key]
 	return v, ok
 }
 
 // String 获取字符串
 func (this *MemSession) String(key string) (string, bool) {
-	v, ok := this.data[key]
+	v, ok := this.Value(key)
 	s, ok := v.(string)
 	return s, ok
 }
 
 //  Int 获取整数值
 func (this *MemSession) Int(key string) (int, bool) {
-	v, ok := this.data[key]
+	v, ok := this.Value(key)
 	s, ok := v.(int)
 	return s, ok
 }
 
 // Bool 获取bool值
 func (this *MemSession) Bool(key string) (bool, bool) {
-	v, ok := this.data[key]
+	v, ok := this.Value(key)
 	s, ok := v.(bool)
 	return s, ok
 }
 
 // Float 获取浮点值
 func (this *MemSession) Float(key string) (float64, bool) {
-	v, ok := this.data[key]
+	v, ok := this.Value(key)
 	s, ok := v.(float64)
 	return s, ok
 }
 
 // SetValue 设置值
 func (this *MemSession) SetValue(key string, value interface{}) {
+	this.rwm.Lock()
+	defer this.rwm.Unlock()
 	this.data[key] = value
 }
 
 // SetString 设置字符串
 func (this *MemSession) SetString(key string, value string) {
-	this.data[key] = value
+	this.SetValue(key, value)
 }
 
 // SetInt 设置整数值
 func (this *MemSession) SetInt(key string, value int) {
-	this.data[key] = value
+	this.SetValue(key, value)
 }
 
 // SetBool 设置bool值
 func (this *MemSession) SetBool(key string, value bool) {
-	this.data[key] = value
+	this.SetValue(key, value)
 }
 
 // SetFloat 设置浮点值
 func (this *MemSession) SetFloat(key string, value float64) {
-	this.data[key] = value
+	this.SetValue(key, value)
 }
 
 // Delete 删除键
 func (this *MemSession) Delete(key string) {
+	this.rwm.Lock()
+	defer this.rwm.Unlock()
 	delete(this.data, key)
 }
 
